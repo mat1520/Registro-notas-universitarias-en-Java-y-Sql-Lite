@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<VBox xmlns:fx="http://javafx.com/fxml" fx:controller="com.universidad.controller.EstudianteController"
+      spacing="10">
+    <padding>
+        <Insets top="20" right="20" bottom="20" left="20"/>
+    </padding>
+
+    <HBox spacing="10" alignment="CENTER_LEFT">
+        <Label fx:id="welcomeLabel" style="-fx-font-size: 18px;"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Button text="Cerrar Sesión" onAction="#handleLogout"/>
+    </HBox>
+
+    <TableView fx:id="calificacionesTable" VBox.vgrow="ALWAYS">
+        <columns>
+            <TableColumn fx:id="materiaColumn" text="Materia"/>
+            <TableColumn fx:id="profesorColumn" text="Profesor"/>
+            <TableColumn fx:id="parcialColumn" text="Parcial"/>
+            <TableColumn fx:id="subnotaNumColumn" text="Subnota"/>
+            <TableColumn fx:id="notaColumn" text="Nota"/>
+            <TableColumn fx:id="totalParcialColumn" text="Total Parcial"/>
+            <TableColumn fx:id="porcentajeFinalColumn" text="% Final"/>
+        </columns>
+    </TableView>
+</VBox> 

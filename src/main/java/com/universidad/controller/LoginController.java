@@ -109,10 +109,11 @@ public class LoginController {
             }
             Stage stage = (Stage) cedulaField.getScene().getWindow();
             stage.setTitle(title);
-            Scene scene = new Scene(root, 800, 600);
+            Scene scene = new Scene(root);
             stage.setScene(scene);
-            stage.setMinWidth(800);
-            stage.setMinHeight(600);
+            stage.hide();
+            stage.setMaximized(true);
+            stage.show();
         } catch (Exception e) {
             e.printStackTrace(); // Mostrar el error real en consola
             throw new Exception("Error al cargar la vista: " + e.getMessage());

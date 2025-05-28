@@ -3,60 +3,79 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import javafx.geometry.Insets?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.image.Image?>
 
-<VBox xmlns="http://javafx.com/javafx"
-      xmlns:fx="http://javafx.com/fxml"
-      fx:controller="com.universidad.controller.AdminController"
-      spacing="10">
+<VBox xmlns:fx="http://javafx.com/fxml" fx:controller="com.universidad.controller.AdminController"
+      spacing="18" style="-fx-background-color: #F9F9F9; -fx-background-radius: 16;">
     <padding>
-        <Insets top="10" right="10" bottom="10" left="10"/>
+        <Insets top="32" right="32" bottom="32" left="32"/>
     </padding>
-    
-    <HBox alignment="CENTER_LEFT" spacing="10">
-        <Label fx:id="welcomeLabel" style="-fx-font-size: 16px; -fx-font-weight: bold;"/>
+
+    <ImageView fitHeight="150" fitWidth="150" preserveRatio="true">
+        <image>
+            <Image url="file:/C:/Users/Ariel/OneDrive/Desktop/POO-FINAL/Screenshot%202025-05-27%20222519%20(2).png" />
+        </image>
+    </ImageView>
+    <Label text="Panel Administrador" style="-fx-font-size: 24px; -fx-font-family: 'Segoe UI', 'Roboto', 'Inter', Arial, sans-serif; -fx-font-weight: bold; -fx-text-fill: #3F51B5; -fx-effect: dropshadow(gaussian, #DDE1E7, 2, 0.1, 1, 1);"/>
+    <Label text="UNIVERSIDAD TECNOLÓGICA DE INTELIGENCIA ARTIFICIAL" wrapText="true"
+           style="-fx-font-size: 13px; -fx-font-family: 'Segoe UI', 'Roboto', 'Inter', Arial, sans-serif; -fx-font-weight: bold; -fx-text-fill: #2E2E2E; -fx-padding: 0 0 8 0;"/>
+
+    <HBox spacing="10" alignment="CENTER_LEFT" style="-fx-background-color: #3F51B5; -fx-padding: 10; -fx-background-radius: 5;">
+        <Label fx:id="welcomeLabel" style="-fx-font-size: 18px; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-family: 'Segoe UI', 'Roboto', 'Inter', Arial, sans-serif;"/>
         <Region HBox.hgrow="ALWAYS"/>
-        <Button fx:id="agregarUsuarioButton" text="Agregar Usuario" onAction="#handleAgregarUsuario"/>
-        <Button text="Cerrar Sesión" onAction="#handleLogout"/>
+        <Button text="Cerrar Sesión" onAction="#handleLogout" style="-fx-background-color: linear-gradient(to right, #3F51B5, #8BC34A); -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5; -fx-font-family: 'Segoe UI', 'Roboto', 'Inter', Arial, sans-serif;"/>
     </HBox>
     
-    <TabPane fx:id="tabPane" VBox.vgrow="ALWAYS">
+    <TabPane VBox.vgrow="ALWAYS" style="-fx-background-color: #FFFFFF; -fx-background-radius: 5; -fx-border-color: #DDE1E7; -fx-border-radius: 5; -fx-effect: dropshadow(gaussian, #DDE1E7, 2, 0.1, 0, 1);">
         <Tab text="Usuarios" closable="false">
             <VBox spacing="10">
-                <TableView fx:id="usuariosTable" VBox.vgrow="ALWAYS">
+                <HBox spacing="10" alignment="CENTER_LEFT">
+                    <Button text="Agregar Usuario" onAction="#handleAgregarUsuario" style="-fx-background-color: #8BC34A; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5; -fx-font-family: 'Segoe UI', 'Roboto', 'Inter', Arial, sans-serif;"/>
+                    <Button text="Editar Usuario" onAction="#handleEditarUsuario" style="-fx-background-color: #3F51B5; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5; -fx-font-family: 'Segoe UI', 'Roboto', 'Inter', Arial, sans-serif;"/>
+                    <Button text="Eliminar Usuario" onAction="#handleEliminarUsuario" style="-fx-background-color: #FF6F61; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5; -fx-font-family: 'Segoe UI', 'Roboto', 'Inter', Arial, sans-serif;"/>
+                </HBox>
+                <TableView fx:id="usuariosTable" VBox.vgrow="ALWAYS" style="-fx-background-color: #FFFFFF; -fx-background-radius: 5; -fx-border-color: #DDE1E7; -fx-border-radius: 5; -fx-effect: dropshadow(gaussian, #DDE1E7, 1, 0.1, 0, 1);">
                     <columns>
-                        <TableColumn fx:id="cedulaColumn" text="Cédula" prefWidth="100"/>
-                        <TableColumn fx:id="nombreColumn" text="Nombre" prefWidth="150"/>
-                        <TableColumn fx:id="apellidoColumn" text="Apellido" prefWidth="150"/>
-                        <TableColumn fx:id="rolColumn" text="Rol" prefWidth="100"/>
-                        <TableColumn fx:id="accionesColumn" text="Acciones" prefWidth="150"/>
+                        <TableColumn fx:id="idColumn" text="ID" style="-fx-font-weight: bold; -fx-font-family: 'Segoe UI', 'Roboto', 'Inter', Arial, sans-serif;"/>
+                        <TableColumn fx:id="cedulaColumn" text="Cédula" style="-fx-font-weight: bold; -fx-font-family: 'Segoe UI', 'Roboto', 'Inter', Arial, sans-serif;"/>
+                        <TableColumn fx:id="nombreColumn" text="Nombre" style="-fx-font-weight: bold; -fx-font-family: 'Segoe UI', 'Roboto', 'Inter', Arial, sans-serif;"/>
+                        <TableColumn fx:id="apellidoColumn" text="Apellido" style="-fx-font-weight: bold; -fx-font-family: 'Segoe UI', 'Roboto', 'Inter', Arial, sans-serif;"/>
+                        <TableColumn fx:id="rolColumn" text="Rol" style="-fx-font-weight: bold; -fx-font-family: 'Segoe UI', 'Roboto', 'Inter', Arial, sans-serif;"/>
                     </columns>
                 </TableView>
             </VBox>
         </Tab>
         <Tab text="Materias" closable="false">
-            <AnchorPane>
-                <TableView fx:id="materiasTable" layoutX="20" layoutY="20" prefWidth="400" prefHeight="300">
+            <VBox spacing="10">
+                <HBox spacing="10" alignment="CENTER_LEFT">
+                    <Button text="Agregar Materia" onAction="#handleAgregarMateria" style="-fx-background-color: #8BC34A; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5; -fx-font-family: 'Segoe UI', 'Roboto', 'Inter', Arial, sans-serif;"/>
+                    <Button text="Editar Materia" onAction="#handleEditarMateria" style="-fx-background-color: #3F51B5; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5; -fx-font-family: 'Segoe UI', 'Roboto', 'Inter', Arial, sans-serif;"/>
+                    <Button text="Eliminar Materia" onAction="#handleEliminarMateria" style="-fx-background-color: #FF6F61; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5; -fx-font-family: 'Segoe UI', 'Roboto', 'Inter', Arial, sans-serif;"/>
+                </HBox>
+                <TableView fx:id="materiasTable" VBox.vgrow="ALWAYS" style="-fx-background-color: #FFFFFF; -fx-background-radius: 5; -fx-border-color: #DDE1E7; -fx-border-radius: 5; -fx-effect: dropshadow(gaussian, #DDE1E7, 1, 0.1, 0, 1);">
                     <columns>
-                        <TableColumn fx:id="materiaNombreColumn" text="Nombre" prefWidth="200" />
-                        <TableColumn fx:id="materiaCarreraColumn" text="Carrera" prefWidth="200" />
+                        <TableColumn fx:id="idMateriaColumn" text="ID" style="-fx-font-weight: bold; -fx-font-family: 'Segoe UI', 'Roboto', 'Inter', Arial, sans-serif;"/>
+                        <TableColumn fx:id="nombreMateriaColumn" text="Nombre" style="-fx-font-weight: bold; -fx-font-family: 'Segoe UI', 'Roboto', 'Inter', Arial, sans-serif;"/>
+                        <TableColumn fx:id="carreraMateriaColumn" text="Carrera" style="-fx-font-weight: bold; -fx-font-family: 'Segoe UI', 'Roboto', 'Inter', Arial, sans-serif;"/>
                     </columns>
                 </TableView>
-                <Button fx:id="agregarMateriaButton" text="Agregar Materia" layoutX="20" layoutY="330" onAction="#handleAgregarMateria" />
-                <Button fx:id="editarMateriaButton" text="Editar Materia" layoutX="150" layoutY="330" onAction="#handleEditarMateria" />
-                <Button fx:id="eliminarMateriaButton" text="Eliminar Materia" layoutX="280" layoutY="330" onAction="#handleEliminarMateria" />
-            </AnchorPane>
+            </VBox>
         </Tab>
         <Tab text="Carreras" closable="false">
-            <AnchorPane>
-                <TableView fx:id="carrerasTable" layoutX="20" layoutY="20" prefWidth="400" prefHeight="300">
+            <VBox spacing="10">
+                <HBox spacing="10" alignment="CENTER_LEFT">
+                    <Button text="Agregar Carrera" onAction="#handleAgregarCarrera" style="-fx-background-color: #8BC34A; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5; -fx-font-family: 'Segoe UI', 'Roboto', 'Inter', Arial, sans-serif;"/>
+                    <Button text="Editar Carrera" onAction="#handleEditarCarrera" style="-fx-background-color: #3F51B5; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5; -fx-font-family: 'Segoe UI', 'Roboto', 'Inter', Arial, sans-serif;"/>
+                    <Button text="Eliminar Carrera" onAction="#handleEliminarCarrera" style="-fx-background-color: #FF6F61; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5; -fx-font-family: 'Segoe UI', 'Roboto', 'Inter', Arial, sans-serif;"/>
+                </HBox>
+                <TableView fx:id="carrerasTable" VBox.vgrow="ALWAYS" style="-fx-background-color: #FFFFFF; -fx-background-radius: 5; -fx-border-color: #DDE1E7; -fx-border-radius: 5; -fx-effect: dropshadow(gaussian, #DDE1E7, 1, 0.1, 0, 1);">
                     <columns>
-                        <TableColumn fx:id="carreraNombreColumn" text="Nombre" prefWidth="300" />
+                        <TableColumn fx:id="idCarreraColumn" text="ID" style="-fx-font-weight: bold; -fx-font-family: 'Segoe UI', 'Roboto', 'Inter', Arial, sans-serif;"/>
+                        <TableColumn fx:id="nombreCarreraColumn" text="Nombre" style="-fx-font-weight: bold; -fx-font-family: 'Segoe UI', 'Roboto', 'Inter', Arial, sans-serif;"/>
                     </columns>
                 </TableView>
-                <Button fx:id="agregarCarreraButton" text="Agregar Carrera" layoutX="20" layoutY="330" onAction="#handleAgregarCarrera" />
-                <Button fx:id="editarCarreraButton" text="Editar Carrera" layoutX="150" layoutY="330" onAction="#handleEditarCarrera" />
-                <Button fx:id="eliminarCarreraButton" text="Eliminar Carrera" layoutX="280" layoutY="330" onAction="#handleEliminarCarrera" />
-            </AnchorPane>
+            </VBox>
         </Tab>
     </TabPane>
     

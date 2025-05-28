@@ -20,19 +20,16 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
-import javafx.scene.control.Button;
 import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.Spinner;
-import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.GridPane;
-import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
 
 public class ProfesorController implements MainController {
@@ -43,15 +40,15 @@ public class ProfesorController implements MainController {
     @FXML
     private TableView<SubnotaRow> subnotasTable;
     @FXML
-    private TableColumn<SubnotaRow, String> nombreColumnSubnotas;
+    private TableColumn<SubnotaRow, String> estudianteColumn;
     @FXML
-    private TableColumn<SubnotaRow, Integer> parcialColumnSubnotas;
+    private TableColumn<SubnotaRow, Integer> parcialColumn;
     @FXML
-    private TableColumn<SubnotaRow, Integer> numeroColumnSubnotas;
+    private TableColumn<SubnotaRow, Integer> numeroColumn;
     @FXML
-    private TableColumn<SubnotaRow, Double> valorColumnSubnotas;
+    private TableColumn<SubnotaRow, Double> valorColumn;
     @FXML
-    private TableColumn<SubnotaRow, Void> accionesColumnSubnotas;
+    private TableColumn<SubnotaRow, Void> accionesColumn;
 
     private Usuario usuario;
 
@@ -100,6 +97,9 @@ public class ProfesorController implements MainController {
             Stage stage = (Stage) welcomeLabel.getScene().getWindow();
             stage.setTitle("Gestión de Notas - Login");
             stage.setScene(new Scene(root));
+            stage.hide();
+            stage.setMaximized(true);
+            stage.show();
         } catch (Exception e) {
             showError("Error al cerrar sesión: " + e.getMessage());
         }
@@ -364,13 +364,13 @@ public class ProfesorController implements MainController {
     }
 
     private void setupSubnotasTable() {
-        nombreColumnSubnotas.setCellValueFactory(new PropertyValueFactory<>("nombre"));
-        parcialColumnSubnotas.setCellValueFactory(new PropertyValueFactory<>("parcial"));
-        numeroColumnSubnotas.setCellValueFactory(new PropertyValueFactory<>("numero"));
-        valorColumnSubnotas.setCellValueFactory(new PropertyValueFactory<>("valor"));
-        accionesColumnSubnotas.setCellFactory(param -> new TableCell<>() {
-            private final Button editButton = new Button("Editar");
-            private final Button deleteButton = new Button("Eliminar");
+        estudianteColumn.setCellValueFactory(new PropertyValueFactory<>("nombre"));
+        parcialColumn.setCellValueFactory(new PropertyValueFactory<>("parcial"));
+        numeroColumn.setCellValueFactory(new PropertyValueFactory<>("numero"));
+        valorColumn.setCellValueFactory(new PropertyValueFactory<>("valor"));
+        accionesColumn.setCellFactory(param -> new javafx.scene.control.TableCell<>() {
+            private final javafx.scene.control.Button editButton = new javafx.scene.control.Button("Editar");
+            private final javafx.scene.control.Button deleteButton = new javafx.scene.control.Button("Eliminar");
             {
                 editButton.setOnAction(event -> {
                     SubnotaRow row = getTableView().getItems().get(getIndex());
@@ -387,7 +387,7 @@ public class ProfesorController implements MainController {
                 if (empty) {
                     setGraphic(null);
                 } else {
-                    HBox buttons = new HBox(5, editButton, deleteButton);
+                    javafx.scene.layout.HBox buttons = new javafx.scene.layout.HBox(5, editButton, deleteButton);
                     setGraphic(buttons);
                 }
             }

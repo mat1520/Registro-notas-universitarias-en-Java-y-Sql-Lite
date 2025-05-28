@@ -48,6 +48,9 @@ public class AdminController implements MainController {
     private TableView<UsuarioRow> usuariosTable;
     
     @FXML
+    private TableColumn<UsuarioRow, Integer> idColumn;
+    
+    @FXML
     private TableColumn<UsuarioRow, String> cedulaColumn;
     
     @FXML
@@ -58,9 +61,6 @@ public class AdminController implements MainController {
     
     @FXML
     private TableColumn<UsuarioRow, String> rolColumn;
-    
-    @FXML
-    private TableColumn<UsuarioRow, Void> accionesColumn;
     
     @FXML
     private Button agregarUsuarioButton;
@@ -90,10 +90,13 @@ public class AdminController implements MainController {
     private TableView<MateriaRow> materiasTable;
     
     @FXML
-    private TableColumn<MateriaRow, String> materiaNombreColumn;
+    private TableColumn<MateriaRow, Integer> idMateriaColumn;
     
     @FXML
-    private TableColumn<MateriaRow, String> materiaCarreraColumn;
+    private TableColumn<MateriaRow, String> nombreMateriaColumn;
+    
+    @FXML
+    private TableColumn<MateriaRow, String> carreraMateriaColumn;
     
     @FXML
     private Button agregarMateriaButton;
@@ -102,7 +105,10 @@ public class AdminController implements MainController {
     private TableView<CarreraRow> carrerasTable;
     
     @FXML
-    private TableColumn<CarreraRow, String> carreraNombreColumn;
+    private TableColumn<CarreraRow, Integer> idCarreraColumn;
+    
+    @FXML
+    private TableColumn<CarreraRow, String> nombreCarreraColumn;
     
     @FXML
     private Button agregarCarreraButton;
@@ -122,45 +128,21 @@ public class AdminController implements MainController {
         nombreColumn.setCellValueFactory(new PropertyValueFactory<>("nombre"));
         apellidoColumn.setCellValueFactory(new PropertyValueFactory<>("apellido"));
         rolColumn.setCellValueFactory(new PropertyValueFactory<>("rol"));
+        if (usuariosTable != null) {
+            idColumn.setCellValueFactory(new PropertyValueFactory<>("id"));
+        }
         
-        // Configurar columna de acciones
-        accionesColumn.setCellFactory(param -> new TableCell<>() {
-            private final Button editButton = new Button("Editar");
-            private final Button deleteButton = new Button("Eliminar");
-            
-            {
-                editButton.setOnAction(event -> {
-                    UsuarioRow row = getTableView().getItems().get(getIndex());
-                    showEditDialog(row);
-                });
-                
-                deleteButton.setOnAction(event -> {
-                    UsuarioRow row = getTableView().getItems().get(getIndex());
-                    showDeleteConfirmation(row);
-                });
-            }
-            
-            @Override
-            protected void updateItem(Void item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty) {
-                    setGraphic(null);
-                } else {
-                    HBox buttons = new HBox(5, editButton, deleteButton);
-                    setGraphic(buttons);
-                }
-            }
-        });
-
         // Inicializar pestaña de materias
         if (materiasTable != null) {
-            materiaNombreColumn.setCellValueFactory(new PropertyValueFactory<>("nombre"));
-            materiaCarreraColumn.setCellValueFactory(new PropertyValueFactory<>("carrera"));
+            idMateriaColumn.setCellValueFactory(new PropertyValueFactory<>("id"));
+            nombreMateriaColumn.setCellValueFactory(new PropertyValueFactory<>("nombre"));
+            carreraMateriaColumn.setCellValueFactory(new PropertyValueFactory<>("carrera"));
             refreshMateriasTable();
         }
 
         if (carrerasTable != null) {
-            carreraNombreColumn.setCellValueFactory(new PropertyValueFactory<>("nombre"));
+            idCarreraColumn.setCellValueFactory(new PropertyValueFactory<>("id"));
+            nombreCarreraColumn.setCellValueFactory(new PropertyValueFactory<>("nombre"));
             refreshCarrerasTable();
         }
     }
@@ -191,8 +173,16 @@ public class AdminController implements MainController {
         rolComboBox.getItems().addAll("ESTUDIANTE", "PROFESOR", "ADMIN");
         rolComboBox.setValue(row.getRol());
         ComboBox<CarreraItem> carreraComboBox = new ComboBox<>();
-        carreraComboBox.getItems().add(new CarreraItem(1, "ING SISTEMAS"));
-        carreraComboBox.getItems().add(new CarreraItem(2, "ING MECATRONICA"));
+        // Cargar carreras dinámicamente
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement("SELECT id_carrera, nombre FROM Carrera ORDER BY nombre")) {
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                carreraComboBox.getItems().add(new CarreraItem(rs.getInt("id_carrera"), rs.getString("nombre")));
+            }
+        } catch (Exception e) {
+            showError("Error al cargar carreras: " + e.getMessage());
+        }
         // ListView para materias (selección múltiple)
         ListView<MateriaItem> materiasListView = new ListView<>();
         materiasListView.getSelectionModel().setSelectionMode(javafx.scene.control.SelectionMode.MULTIPLE);
@@ -524,10 +514,11 @@ public class AdminController implements MainController {
             
             Stage stage = (Stage) welcomeLabel.getScene().getWindow();
             stage.setTitle("Gestión de Notas - Login");
-            Scene scene = new Scene(root, 600, 400);
+            Scene scene = new Scene(root);
             stage.setScene(scene);
-            stage.setMinWidth(600);
-            stage.setMinHeight(400);
+            stage.hide();
+            stage.setMaximized(true);
+            stage.show();
         } catch (Exception e) {
             showError("Error al cerrar sesión: " + e.getMessage());
         }
@@ -555,8 +546,16 @@ public class AdminController implements MainController {
         rolComboBox.getItems().addAll("ESTUDIANTE", "PROFESOR", "ADMIN");
         rolComboBox.setValue("ESTUDIANTE");
         ComboBox<CarreraItem> carreraComboBox = new ComboBox<>();
-        carreraComboBox.getItems().add(new CarreraItem(1, "ING SISTEMAS"));
-        carreraComboBox.getItems().add(new CarreraItem(2, "ING MECATRONICA"));
+        // Cargar carreras dinámicamente
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement("SELECT id_carrera, nombre FROM Carrera ORDER BY nombre")) {
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                carreraComboBox.getItems().add(new CarreraItem(rs.getInt("id_carrera"), rs.getString("nombre")));
+            }
+        } catch (Exception e) {
+            showError("Error al cargar carreras: " + e.getMessage());
+        }
         ListView<MateriaItem> materiasListView = new ListView<>();
         materiasListView.getSelectionModel().setSelectionMode(javafx.scene.control.SelectionMode.MULTIPLE);
         materiasListView.setPrefHeight(120);
@@ -1119,8 +1118,16 @@ public class AdminController implements MainController {
         dialog.setHeaderText("Ingrese los datos de la nueva materia");
         TextField nombreField = new TextField();
         ComboBox<CarreraItem> carreraComboBox = new ComboBox<>();
-        carreraComboBox.getItems().add(new CarreraItem(1, "ING SISTEMAS"));
-        carreraComboBox.getItems().add(new CarreraItem(2, "ING MECATRONICA"));
+        // Cargar carreras dinámicamente
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement("SELECT id_carrera, nombre FROM Carrera ORDER BY nombre")) {
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                carreraComboBox.getItems().add(new CarreraItem(rs.getInt("id_carrera"), rs.getString("nombre")));
+            }
+        } catch (Exception e) {
+            showError("Error al cargar carreras: " + e.getMessage());
+        }
         GridPane grid = new GridPane();
         grid.setHgap(10);
         grid.setVgap(10);
@@ -1213,8 +1220,16 @@ public class AdminController implements MainController {
         dialog.setHeaderText("Editar datos de la materia");
         TextField nombreField = new TextField(selected.getNombre());
         ComboBox<CarreraItem> carreraComboBox = new ComboBox<>();
-        carreraComboBox.getItems().add(new CarreraItem(1, "ING SISTEMAS"));
-        carreraComboBox.getItems().add(new CarreraItem(2, "ING MECATRONICA"));
+        // Cargar carreras dinámicamente
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement("SELECT id_carrera, nombre FROM Carrera ORDER BY nombre")) {
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                carreraComboBox.getItems().add(new CarreraItem(rs.getInt("id_carrera"), rs.getString("nombre")));
+            }
+        } catch (Exception e) {
+            showError("Error al cargar carreras: " + e.getMessage());
+        }
         carreraComboBox.setValue(carreraComboBox.getItems().stream().filter(c -> c.getNombre().equals(selected.getCarrera())).findFirst().orElse(null));
         GridPane grid = new GridPane();
         grid.setHgap(10);

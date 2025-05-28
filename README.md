@@ -1,115 +1,92 @@
-# Sistema de Registro de Notas Universitarias
+# Sistema de Gestión de Notas UTIA
 
-Aplicación de escritorio en Java y JavaFX con SQLite para la gestión de calificaciones universitarias. Incluye roles de estudiante, profesor y administrador con funciones de consulta, asignación de notas y operaciones CRUD.
-
-## Características principales
-
-- **CRUD completo** de usuarios (estudiantes, profesores, admins), materias y carreras, con validaciones robustas.
-- **Vista de profesor:** permite calificar a cualquier estudiante de la carrera asociada a la materia, aunque no tenga notas previas.
-- **Sincronización automática** de la tabla de calificaciones tras cualquier cambio en el CRUD (agregar, editar, eliminar estudiantes, profesores, materias o cursos).
-- **Validaciones estrictas**: cédula única y válida, campos obligatorios, no duplicados, restricciones de asignación de materias y carreras.
-- **Mensajes claros** de error y éxito en todas las operaciones.
-- **UX mejorada:** formularios dinámicos, refresco automático de tablas, botones de acción intuitivos.
-
-## Características Implementadas
-
-### Roles de Usuario
-
-- **Estudiante**: Visualiza sus calificaciones y subnotas por materia.
-- **Profesor**: Asigna y gestiona subnotas por parcial y materia, con validaciones estrictas.
-- **Administrador**: Gestiona usuarios, roles, carreras y materias.
-
-### Funcionalidades por Rol
-
-#### Estudiante
-- Visualización de calificaciones por materia.
-- Desglose de subnotas por parcial.
-- Cálculo automático de totales y porcentajes.
-- Interfaz limpia y enfocada solo en subnotas y materias.
-
-#### Profesor
-- Selección de curso a gestionar.
-- Lista de estudiantes inscritos.
-- Asignación y edición de subnotas por parcial, con reglas:
-  - **Máximo 10 subnotas por materia/calificación.**
-  - **No se puede repetir el número de subnota en el mismo parcial/calificación.**
-  - **Solo se permiten los números de subnota válidos para cada parcial:**
-    - Parcial 1: subnotas 1, 2, 3
-    - Parcial 2: subnotas 4, 5, 6
-    - Parcial 3: subnotas 7, 8, 9, 10
-  - **El valor de cada subnota debe estar entre 0 y 10.**
-  - **Si se intenta ingresar un valor fuera de rango, se muestra error y NO se guarda.**
-- Visualización de resumen de subnotas asignadas.
-
-#### Administrador
-- Gestión de usuarios (crear, modificar, eliminar).
-- Asignación de roles.
-- Gestión de carreras y materias.
-- Inscripción automática de estudiantes en cursos según la materia y carrera.
-
-### Tecnologías Utilizadas
-
-- Java 8+
-- JavaFX para la interfaz gráfica
-- SQLite como base de datos
-- Maven para gestión de dependencias
-
-### Estructura del Proyecto
-
-```
-src/
-├── main/
-│   ├── java/
-│   │   └── com/
-│   │       └── universidad/
-│   │           ├── controller/    # Controladores JavaFX
-│   │           ├── dao/           # Capa de acceso a datos
-│   │           ├── model/         # Modelos de datos
-│   │           └── util/          # Utilidades
-│   └── resources/
-│       ├── fxml/                  # Archivos FXML
-│       └── sql/                   # Scripts SQL
-```
-
-### Estado actual
-
-- ✅ Sistema de autenticación
-- ✅ Gestión de calificaciones y subnotas con reglas estrictas
-- ✅ Interfaz de estudiante (solo subnotas y materias)
-- ✅ Interfaz de profesor (asignación y edición de subnotas)
-- ✅ Interfaz de administrador (gestión de usuarios, carreras y materias)
-- ✅ Base de datos SQLite
-- ✅ Cálculo automático de notas
-- ✅ CRUD de usuarios, materias y carreras
-- ✅ Validaciones y sincronización de datos
-- ✅ Vista de profesor universal y robusta
-- ✅ Mensajes claros y experiencia de usuario mejorada
-
-### Próximas Mejoras
-
-- Mejorar el diseño de la interfaz
-- Agregar reportes y estadísticas
-- Implementar sistema de recuperación de contraseña
-
-## Cómo probar la funcionalidad
-
-1. **Agregar estudiantes, profesores, materias y carreras** desde el panel de administrador.
-2. **Asignar materias a estudiantes y profesores** (los profesores solo pueden calificar materias que les han sido asignadas).
-3. **Iniciar sesión como profesor:**
-   - Selecciona un curso (materia).
-   - Verás todos los estudiantes de la carrera, aunque sean nuevos o no tengan notas.
-   - Puedes calificar a cualquier estudiante; si no tiene registro previo, el sistema lo crea automáticamente.
-4. **Editar o eliminar usuarios, materias o carreras:**
-   - El sistema sincroniza automáticamente las calificaciones y relaciones.
-   - No se pueden eliminar carreras o materias si tienen dependencias activas.
-
-## Recomendaciones
-
-- Siempre refresca la tabla tras cualquier operación para ver los cambios reflejados.
-- Usa el botón de "Generar contraseña segura" al crear usuarios para mayor seguridad.
-- Si tienes problemas con la visualización de estudiantes en la vista de profesor, asegúrate de que la sincronización de calificaciones esté activa (esto ya está automatizado en el sistema).
+## Descripción
+Sistema universitario para la gestión de notas, usuarios, materias y carreras. Incluye roles de Administrador, Profesor y Estudiante. Interfaz moderna, validaciones robustas y sincronización automática de datos.
 
 ---
 
-> **Repositorio:**  
-> [https://github.com/mat1520/Registro-notas-universitarias-en-Java-y-Sql-Lite](https://github.com/mat1520/Registro-notas-universitarias-en-Java-y-Sql-Lite) 
+## 🚀 Instalación y Primeros Pasos
+
+1. **Clona el repositorio:**
+   ```bash
+   git clone https://github.com/mat1520/Registro-notas-universitarias-en-Java-y-Sql-Lite
+   cd POO-FINAL
+   ```
+2. **Restaura la base de datos de ejemplo:**
+   - Asegúrate de tener SQLite instalado.
+   - Ejecuta el script `init.sql`:
+     ```bash
+     sqlite3 universidad.db < src/main/resources/sql/init.sql
+     ```
+   - O usa tu gestor SQLite favorito para importar el archivo.
+
+3. **Compila y ejecuta:**
+   ```bash
+   mvnd javafx:run
+   ```
+
+---
+
+## 🗃️ Datos de Ejemplo Incluidos
+- **3 Carreras:**
+  - Ingeniería en Sistemas
+  - Ingeniería Mecatrónica
+  - Ingeniería Civil
+- **30 Estudiantes:**
+  - Creados con cédulas y nombres reales (ver sección de credenciales)
+- **10 Profesores:**
+  - Nombres y cédulas generados, contraseñas seguras
+- **1 Administrador:**
+  - Cédula: `1754198487`
+  - Contraseña: `ADMIN`
+- **Materias y cursos** distribuidos entre carreras y profesores
+
+---
+
+## 🔑 Credenciales de Ejemplo
+
+### Administrador
+- **Cédula:** `1754198487`
+- **Contraseña:** `ADMIN`
+
+### Profesores
+- **Cédulas:** `1750000001` a `1750000010`
+- **Contraseñas:** `P@ssw0rd1!`, `P@ssw0rd2!`, ...
+
+### Estudiantes
+- **Cédulas y nombres:**
+  - `1753797065` – Engelees Gregori Alvarado Arbiza – `S3guro1!`
+  - `1725080327` – Kamilah Domenica Arcentales Egas – `S3guro2!`
+  - ...
+  - (Ver `init.sql` para la lista completa de estudiantes y contraseñas)
+
+---
+
+## 📝 Uso Rápido
+1. Inicia sesión como **Administrador** para gestionar carreras, materias, usuarios y asignaciones.
+2. Inicia sesión como **Profesor** para ver y calificar estudiantes en sus materias.
+3. Inicia sesión como **Estudiante** para consultar sus notas y materias.
+
+---
+
+## 💡 Notas Técnicas
+- El sistema se adapta a pantalla completa automáticamente.
+- Los combos de carrera y materia se actualizan dinámicamente.
+- Validaciones robustas para cédula, campos obligatorios y relaciones.
+- CRUD completo para usuarios, materias y carreras.
+
+---
+
+## 📂 Estructura de la Base de Datos
+- Ver `src/main/resources/sql/init.sql` para la estructura y datos de ejemplo.
+
+---
+
+## 👨‍💻 Autores y Créditos
+- Proyecto UTIA – Universidad Tecnológica de Inteligencia Artificial
+- Desarrollado por:  Ariel Melo , Mateo Yánez, Maria Chango
+
+---
+
+¿Dudas o sugerencias? ¡Contáctanos! 
+arielmelo1520@hotmail.com

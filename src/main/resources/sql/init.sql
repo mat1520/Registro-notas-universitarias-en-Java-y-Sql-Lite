@@ -147,4 +147,63 @@ WHERE cal.id_estudiante = 2 AND m.id_carrera = 1 AND (
     (distribucion.p = 1 AND distribucion.n BETWEEN 1 AND 3) OR
     (distribucion.p = 2 AND distribucion.n BETWEEN 4 AND 6) OR
     (distribucion.p = 3 AND distribucion.n BETWEEN 7 AND 10)
-); 
+);
+
+-- Carreras
+INSERT INTO Carrera (nombre) VALUES
+('Ingeniería en Sistemas'),
+('Ingeniería Mecatrónica'),
+('Ingeniería Civil');
+
+-- Admin
+INSERT INTO Usuario (cedula, nombre, apellido, password, rol) VALUES
+('1754198487', 'Admin', 'Principal', 'ADMIN', 'ADMIN');
+
+-- Profesores (10)
+INSERT INTO Usuario (cedula, nombre, apellido, password, rol) VALUES
+('1750000001', 'Profesor1', 'Apellido1', 'P@ssw0rd1!', 'PROFESOR'),
+('1750000002', 'Profesor2', 'Apellido2', 'P@ssw0rd2!', 'PROFESOR'),
+('1750000003', 'Profesor3', 'Apellido3', 'P@ssw0rd3!', 'PROFESOR'),
+('1750000004', 'Profesor4', 'Apellido4', 'P@ssw0rd4!', 'PROFESOR'),
+('1750000005', 'Profesor5', 'Apellido5', 'P@ssw0rd5!', 'PROFESOR'),
+('1750000006', 'Profesor6', 'Apellido6', 'P@ssw0rd6!', 'PROFESOR'),
+('1750000007', 'Profesor7', 'Apellido7', 'P@ssw0rd7!', 'PROFESOR'),
+('1750000008', 'Profesor8', 'Apellido8', 'P@ssw0rd8!', 'PROFESOR'),
+('1750000009', 'Profesor9', 'Apellido9', 'P@ssw0rd9!', 'PROFESOR'),
+('1750000010', 'Profesor10', 'Apellido10', 'P@ssw0rd10!', 'PROFESOR');
+
+-- Estudiantes (30)
+INSERT INTO Usuario (cedula, nombre, apellido, password, rol) VALUES
+('1753797065', 'Engelees Gregori', 'Alvarado Arbiza', 'S3guro1!', 'ESTUDIANTE'),
+('1725080327', 'Kamilah Domenica', 'Arcentales Egas', 'S3guro2!', 'ESTUDIANTE'),
+('1752202323', 'Aaron Henry', 'Barriga Semanate', 'S3guro3!', 'ESTUDIANTE'),
+('1727295006', 'Katherine Renata', 'Bolaños Ortiz', 'S3guro4!', 'ESTUDIANTE'),
+('1150350682', 'Andres Mauricio', 'Bustos Tomala', 'S3guro5!', 'ESTUDIANTE'),
+('1728854686', 'Giullyana Salomé', 'Calvache Garces', 'S3guro6!', 'ESTUDIANTE'),
+('1751445550', 'Madelin Lisbeth', 'Calvopiña Asimbaya', 'S3guro7!', 'ESTUDIANTE'),
+('1729354637', 'Benjamin Alessandro', 'Carrasco Pastaz', 'S3guro8!', 'ESTUDIANTE'),
+('1728544543', 'Wendy Cristina', 'Castro Correa', 'S3guro9!', 'ESTUDIANTE'),
+('1725091324', 'Esteban Nicolás', 'Castro Flores', 'S3guro10!', 'ESTUDIANTE'),
+('1004536312', 'Mónica Danae', 'Chalá Pavón', 'S3guro11!', 'ESTUDIANTE'),
+('2101073100', 'Karla Emilia', 'Checa Naranjo', 'S3guro12!', 'ESTUDIANTE'),
+('1727291823', 'Alonso Gabriel', 'Constante Mosquera', 'S3guro13!', 'ESTUDIANTE'),
+('1751371020', 'Scarlet Salomé', 'Córdova Barrionuevo', 'S3guro14!', 'ESTUDIANTE'),
+('1755999032', 'Camila Alejandra', 'De La Torre Cedeño', 'S3guro15!', 'ESTUDIANTE'),
+('1750144279', 'Patricia Juliana', 'Garrido Quintana', 'S3guro16!', 'ESTUDIANTE'),
+('1723787535', 'Ángeles Daniela', 'Gavilema Changotasic', 'S3guro17!', 'ESTUDIANTE'),
+('1753413333', 'Genessis Daniela', 'Goya Meneses', 'S3guro18!', 'ESTUDIANTE'),
+('1729091098', 'Jennifer Daniela', 'Guachamín Veloz', 'S3guro19!', 'ESTUDIANTE'),
+('1726456450', 'Jehieli Alejandra', 'Herrera Molina', 'S3guro20!', 'ESTUDIANTE'),
+('2200557136', 'Camila Stephanie', 'Jaramillo Vidal', 'S3guro21!', 'ESTUDIANTE'),
+('1755731815', 'Ariel Tsaik', 'Luna Vizuete', 'S3guro22!', 'ESTUDIANTE'),
+('1753559820', 'Juda Benjamin', 'Martínez Arteaga', 'S3guro23!', 'ESTUDIANTE'),
+('1753728201', 'Alison Joely', 'Minas Cedeño', 'S3guro24!', 'ESTUDIANTE'),
+('1722580873', 'Jean Pierre', 'Molina Arcos', 'S3guro25!', 'ESTUDIANTE'),
+('1755854294', 'Ana Paula', 'Morales Martínez', 'S3guro26!', 'ESTUDIANTE'),
+('1753859352', 'Gabriel Sebastián', 'Moreno Yambay', 'S3guro27!', 'ESTUDIANTE'),
+('1751657089', 'Martín Esteban', 'Moya Guerrero', 'S3guro28!', 'ESTUDIANTE'),
+('1750998575', 'Eduardo Sebastián', 'Parra Egas', 'S3guro29!', 'ESTUDIANTE'),
+('1754482329', 'Daniela Isabel', 'Pazmiño Ortiz', 'S3guro30!', 'ESTUDIANTE');
+
+-- Asignar profesores y estudiantes a carreras y materias (ejemplo, balanceado)
+-- Aquí puedes agregar los INSERT para Estudiante, Profesor, Materia, Curso, etc. según la estructura de tu base de datos. 

@@ -68,7 +68,10 @@ public class EstudianteController implements MainController {
                 materias.add(new MateriaItem(rs.getInt("id_materia"), rs.getString("nombre")));
             }
             materiaComboBox.setItems(materias);
-            if (!materias.isEmpty()) materiaComboBox.setValue(materias.get(0));
+            if (!materias.isEmpty()) {
+                materiaComboBox.setValue(materias.get(0));
+                loadSubnotas();
+            }
         } catch (Exception e) {
             showError("Error al cargar materias: " + e.getMessage());
         }
@@ -114,6 +117,9 @@ public class EstudianteController implements MainController {
             Stage stage = (Stage) welcomeLabel.getScene().getWindow();
             stage.setTitle("Gestión de Notas - Login");
             stage.setScene(new Scene(root));
+            stage.hide();
+            stage.setMaximized(true);
+            stage.show();
         } catch (Exception e) {
             showError("Error al cerrar sesión: " + e.getMessage());
         }

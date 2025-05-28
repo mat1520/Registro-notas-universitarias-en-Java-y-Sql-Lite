@@ -3,24 +3,36 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import javafx.geometry.Insets?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.image.Image?>
 
-<VBox alignment="CENTER" spacing="20.0" xmlns:fx="http://javafx.com/fxml"
-      fx:controller="com.universidad.controller.LoginController">
+<VBox alignment="CENTER" spacing="18" xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.universidad.controller.LoginController"
+      style="-fx-background-color: #F9F9F9; -fx-background-radius: 16;">
     <padding>
-        <Insets bottom="20.0" left="20.0" right="20.0" top="20.0"/>
+        <Insets bottom="32" left="32" right="32" top="32"/>
     </padding>
 
-    <Label text="Gestión de Notas" style="-fx-font-size: 24px; -fx-font-weight: bold;"/>
+    <ImageView fitHeight="150" fitWidth="150" preserveRatio="true">
+        <image>
+            <Image url="file:/C:/Users/Ariel/OneDrive/Desktop/POO-FINAL/Screenshot%202025-05-27%20222519%20(2).png" />
+        </image>
+    </ImageView>
+
+    <Label text="Gestión de Notas" style="-fx-font-size: 28px; -fx-font-family: 'Segoe UI', 'Roboto', 'Inter', Arial, sans-serif; -fx-font-weight: bold; -fx-text-fill: #3F51B5; -fx-effect: dropshadow(gaussian, #DDE1E7, 2, 0.1, 1, 1);"/>
+    <Label text="UNIVERSIDAD TECNOLÓGICA DE INTELIGENCIA ARTIFICIAL" wrapText="true"
+           style="-fx-font-size: 15px; -fx-font-family: 'Segoe UI', 'Roboto', 'Inter', Arial, sans-serif; -fx-font-weight: bold; -fx-text-fill: #2E2E2E; -fx-padding: 0 0 8 0;"/>
     
-    <GridPane vgap="10" hgap="10">
-        <Label text="Cédula:" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
-        <TextField fx:id="cedulaField" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+    <GridPane vgap="16" hgap="12" style="-fx-background-color: #FFFFFF; -fx-background-radius: 10; -fx-padding: 24; -fx-border-color: #DDE1E7; -fx-border-radius: 10; -fx-effect: dropshadow(gaussian, #DDE1E7, 4, 0.1, 0, 2);">
+        <Label text="Cédula:" GridPane.columnIndex="0" GridPane.rowIndex="0" style="-fx-font-size: 15px; -fx-text-fill: #2E2E2E; -fx-font-family: 'Segoe UI', 'Roboto', 'Inter', Arial, sans-serif;"/>
+        <TextField fx:id="cedulaField" GridPane.columnIndex="1" GridPane.rowIndex="0" style="-fx-background-radius: 6; -fx-border-radius: 6; -fx-border-color: #3F51B5; -fx-background-color: #F9F9F9; -fx-font-size: 15px; -fx-text-fill: #2E2E2E;"/>
         
-        <Label text="Contraseña:" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
-        <PasswordField fx:id="passwordField" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+        <Label text="Contraseña:" GridPane.columnIndex="0" GridPane.rowIndex="1" style="-fx-font-size: 15px; -fx-text-fill: #2E2E2E; -fx-font-family: 'Segoe UI', 'Roboto', 'Inter', Arial, sans-serif;"/>
+        <PasswordField fx:id="passwordField" GridPane.columnIndex="1" GridPane.rowIndex="1" style="-fx-background-radius: 6; -fx-border-radius: 6; -fx-border-color: #3F51B5; -fx-background-color: #F9F9F9; -fx-font-size: 15px; -fx-text-fill: #2E2E2E;"/>
     </GridPane>
     
-    <Button text="Iniciar Sesión" onAction="#handleLogin" defaultButton="true"/>
+    <Button text="Iniciar Sesión" onAction="#handleLogin" defaultButton="true"
+            style="-fx-background-color: linear-gradient(to right, #3F51B5, #8BC34A); -fx-text-fill: white; -fx-font-size: 16px; -fx-font-weight: bold; -fx-background-radius: 8; -fx-padding: 8 32 8 32; -fx-effect: dropshadow(gaussian, #DDE1E7, 2, 0.1, 1, 1);"/>
     
-    <Label fx:id="errorLabel" style="-fx-text-fill: red;"/>
+    <Label fx:id="errorLabel" style="-fx-text-fill: #FF6F61; -fx-font-size: 14px; -fx-font-family: 'Segoe UI', 'Roboto', 'Inter', Arial, sans-serif; -fx-font-weight: bold;"/>
 </VBox> 

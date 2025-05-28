@@ -20,10 +20,9 @@ public class Main extends Application {
         Parent root = loader.load();
         
         primaryStage.setTitle("Gestión de Notas - Login");
-        Scene scene = new Scene(root, 600, 400);
+        Scene scene = new Scene(root);
         primaryStage.setScene(scene);
-        primaryStage.setMinWidth(600);
-        primaryStage.setMinHeight(400);
+        primaryStage.setMaximized(true);
         primaryStage.show();
     }
     

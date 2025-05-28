@@ -17,14 +17,16 @@
     </HBox>
 
     <ComboBox fx:id="cursoComboBox"/>
-    <Button text="Cargar Estudiantes" onAction="#handleLoadEstudiantes"/>
+    <Button text="Actualizar" onAction="#handleActualizarSubnotas"/>
+    <Button text="Agregar Subnota" onAction="#handleAgregarSubnota"/>
 
-    <TableView fx:id="estudiantesTable" VBox.vgrow="ALWAYS">
+    <TableView fx:id="subnotasTable" VBox.vgrow="ALWAYS">
         <columns>
-            <TableColumn fx:id="matriculaColumn" text="Matrícula"/>
-            <TableColumn fx:id="nombreColumn" text="Nombre"/>
-            <TableColumn fx:id="notaColumn" text="Nota"/>
-            <TableColumn fx:id="accionesColumn" text="Acciones"/>
+            <TableColumn fx:id="nombreColumnSubnotas" text="Nombre"/>
+            <TableColumn fx:id="parcialColumnSubnotas" text="Parcial"/>
+            <TableColumn fx:id="numeroColumnSubnotas" text="N° Subnota"/>
+            <TableColumn fx:id="valorColumnSubnotas" text="Valor"/>
+            <TableColumn fx:id="accionesColumnSubnotas" text="Acciones"/>
         </columns>
     </TableView>
 </VBox> 

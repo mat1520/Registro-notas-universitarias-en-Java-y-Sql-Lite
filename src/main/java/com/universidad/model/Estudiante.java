@@ -3,15 +3,13 @@ package com.universidad.model;
 public class Estudiante {
     private Integer idEstudiante;
     private Usuario usuario;
-    private String matricula;
     private Carrera carrera;
 
     public Estudiante() {}
 
-    public Estudiante(Integer idEstudiante, Usuario usuario, String matricula, Carrera carrera) {
+    public Estudiante(Integer idEstudiante, Usuario usuario, Carrera carrera) {
         this.idEstudiante = idEstudiante;
         this.usuario = usuario;
-        this.matricula = matricula;
         this.carrera = carrera;
     }
 
@@ -32,14 +30,6 @@ public class Estudiante {
         this.usuario = usuario;
     }
 
-    public String getMatricula() {
-        return matricula;
-    }
-
-    public void setMatricula(String matricula) {
-        this.matricula = matricula;
-    }
-
     public Carrera getCarrera() {
         return carrera;
     }
@@ -50,6 +40,6 @@ public class Estudiante {
 
     @Override
     public String toString() {
-        return usuario.getNombre() + " " + usuario.getApellido() + " (" + matricula + ")";
+        return usuario.getNombre() + " " + usuario.getApellido();
     }
 } 

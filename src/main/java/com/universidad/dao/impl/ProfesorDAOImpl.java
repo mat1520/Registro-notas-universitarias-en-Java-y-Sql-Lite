@@ -17,20 +17,14 @@ public class ProfesorDAOImpl implements ProfesorDAO {
     
     @Override
     public Profesor create(Profesor profesor) throws Exception {
-        String sql = "INSERT INTO Profesor (id_usuario, titulo, especialidad) VALUES (?, ?, ?)";
-        
+        String sql = "INSERT INTO Profesor (id_usuario) VALUES (?)";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-            
             pstmt.setInt(1, profesor.getUsuario().getIdUsuario());
-            pstmt.setString(2, profesor.getTitulo());
-            pstmt.setString(3, profesor.getEspecialidad());
-            
             int affectedRows = pstmt.executeUpdate();
             if (affectedRows == 0) {
                 throw new SQLException("Creating profesor failed, no rows affected.");
             }
-            
             try (ResultSet generatedKeys = pstmt.getGeneratedKeys()) {
                 if (generatedKeys.next()) {
                     profesor.setIdProfesor(generatedKeys.getInt(1));
@@ -38,7 +32,6 @@ public class ProfesorDAOImpl implements ProfesorDAO {
                     throw new SQLException("Creating profesor failed, no ID obtained.");
                 }
             }
-            
             return profesor;
         }
     }
@@ -84,21 +77,15 @@ public class ProfesorDAOImpl implements ProfesorDAO {
     
     @Override
     public Profesor update(Profesor profesor) throws Exception {
-        String sql = "UPDATE Profesor SET id_usuario = ?, titulo = ?, especialidad = ? WHERE id_profesor = ?";
-        
+        String sql = "UPDATE Profesor SET id_usuario = ? WHERE id_profesor = ?";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            
             pstmt.setInt(1, profesor.getUsuario().getIdUsuario());
-            pstmt.setString(2, profesor.getTitulo());
-            pstmt.setString(3, profesor.getEspecialidad());
-            pstmt.setInt(4, profesor.getIdProfesor());
-            
+            pstmt.setInt(2, profesor.getIdProfesor());
             int affectedRows = pstmt.executeUpdate();
             if (affectedRows == 0) {
                 throw new SQLException("Updating profesor failed, no rows affected.");
             }
-            
             return profesor;
         }
     }
@@ -141,24 +128,8 @@ public class ProfesorDAOImpl implements ProfesorDAO {
     
     @Override
     public List<Profesor> findByEspecialidad(String especialidad) throws Exception {
-        String sql = "SELECT p.*, u.* FROM Profesor p " +
-                    "JOIN Usuario u ON p.id_usuario = u.id_usuario " +
-                    "WHERE p.especialidad = ?";
-        
-        List<Profesor> profesores = new ArrayList<>();
-        
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            
-            pstmt.setString(1, especialidad);
-            ResultSet rs = pstmt.executeQuery();
-            
-            while (rs.next()) {
-                profesores.add(mapResultSetToProfesor(rs));
-            }
-            
-            return profesores;
-        }
+        // Ya no existe el campo especialidad, así que devuelvo todos los profesores
+        return readAll();
     }
     
     private Profesor mapResultSetToProfesor(ResultSet rs) throws SQLException {
@@ -169,13 +140,9 @@ public class ProfesorDAOImpl implements ProfesorDAO {
         usuario.setApellido(rs.getString("apellido"));
         usuario.setPassword(rs.getString("password"));
         usuario.setRol(rs.getString("rol"));
-        
         Profesor profesor = new Profesor();
         profesor.setIdProfesor(rs.getInt("id_profesor"));
         profesor.setUsuario(usuario);
-        profesor.setTitulo(rs.getString("titulo"));
-        profesor.setEspecialidad(rs.getString("especialidad"));
-        
         return profesor;
     }
 } 

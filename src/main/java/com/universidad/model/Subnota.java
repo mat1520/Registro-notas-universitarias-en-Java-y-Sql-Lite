@@ -3,25 +3,28 @@ package com.universidad.model;
 public class Subnota {
     private Integer idSubnota;
     private Integer idCalificacion;
-    private Integer idParcial;
-    private int numero;
-    private double valor;
+    private Integer parcial;
+    private Integer numero;
+    private Double valor;
+
     public Subnota() {}
-    public Subnota(Integer idSubnota, Integer idCalificacion, Integer idParcial, int numero, double valor) {
+
+    public Subnota(Integer idSubnota, Integer idCalificacion, Integer parcial, Integer numero, Double valor) {
         this.idSubnota = idSubnota;
         this.idCalificacion = idCalificacion;
-        this.idParcial = idParcial;
+        this.parcial = parcial;
         this.numero = numero;
         this.valor = valor;
     }
+
     public Integer getIdSubnota() { return idSubnota; }
     public void setIdSubnota(Integer idSubnota) { this.idSubnota = idSubnota; }
     public Integer getIdCalificacion() { return idCalificacion; }
     public void setIdCalificacion(Integer idCalificacion) { this.idCalificacion = idCalificacion; }
-    public Integer getIdParcial() { return idParcial; }
-    public void setIdParcial(Integer idParcial) { this.idParcial = idParcial; }
-    public int getNumero() { return numero; }
-    public void setNumero(int numero) { this.numero = numero; }
-    public double getValor() { return valor; }
-    public void setValor(double valor) { this.valor = valor; }
+    public Integer getParcial() { return parcial; }
+    public void setParcial(Integer parcial) { this.parcial = parcial; }
+    public Integer getNumero() { return numero; }
+    public void setNumero(Integer numero) { this.numero = numero; }
+    public Double getValor() { return valor; }
+    public void setValor(Double valor) { this.valor = valor; }
 } 

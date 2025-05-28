@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import javafx.geometry.Insets?>
@@ -16,15 +15,13 @@
         <Button text="Cerrar Sesión" onAction="#handleLogout"/>
     </HBox>
 
-    <TableView fx:id="calificacionesTable" VBox.vgrow="ALWAYS">
+    <ComboBox fx:id="materiaComboBox" promptText="Selecciona materia"/>
+    <TableView fx:id="subnotasTable" VBox.vgrow="ALWAYS">
         <columns>
-            <TableColumn fx:id="materiaColumn" text="Materia"/>
-            <TableColumn fx:id="profesorColumn" text="Profesor"/>
             <TableColumn fx:id="parcialColumn" text="Parcial"/>
-            <TableColumn fx:id="subnotaNumColumn" text="Subnota"/>
-            <TableColumn fx:id="notaColumn" text="Nota"/>
-            <TableColumn fx:id="totalParcialColumn" text="Total Parcial"/>
-            <TableColumn fx:id="porcentajeFinalColumn" text="% Final"/>
+            <TableColumn fx:id="numeroColumn" text="N° Subnota"/>
+            <TableColumn fx:id="valorColumn" text="Valor"/>
         </columns>
     </TableView>
+    <Label fx:id="totalLabel" style="-fx-font-size: 16px; -fx-font-weight: bold;"/>
 </VBox> 

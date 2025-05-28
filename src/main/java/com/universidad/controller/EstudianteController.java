@@ -3,24 +3,18 @@ package com.universidad.controller;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
-import com.universidad.dao.impl.ParcialDAOImpl;
-import com.universidad.dao.impl.SubnotaDAOImpl;
-import com.universidad.model.Parcial;
-import com.universidad.model.Subnota;
 import com.universidad.model.Usuario;
 import com.universidad.util.DatabaseConnection;
 
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
@@ -28,119 +22,95 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.Stage;
 
 public class EstudianteController implements MainController {
-    
     @FXML
     private Label welcomeLabel;
-    
     @FXML
-    private TableView<SubnotaRow> calificacionesTable;
-    
+    private ComboBox<MateriaItem> materiaComboBox;
     @FXML
-    private TableColumn<SubnotaRow, String> materiaColumn;
-    
+    private TableView<SubnotaRow> subnotasTable;
     @FXML
-    private TableColumn<SubnotaRow, String> profesorColumn;
-    
+    private TableColumn<SubnotaRow, Integer> parcialColumn;
     @FXML
-    private TableColumn<SubnotaRow, String> parcialColumn;
-    
+    private TableColumn<SubnotaRow, Integer> numeroColumn;
     @FXML
-    private TableColumn<SubnotaRow, Integer> subnotaNumColumn;
-    
+    private TableColumn<SubnotaRow, Double> valorColumn;
     @FXML
-    private TableColumn<SubnotaRow, Double> notaColumn;
-    
-    @FXML
-    private TableColumn<SubnotaRow, Double> totalParcialColumn;
-    
-    @FXML
-    private TableColumn<SubnotaRow, Double> porcentajeFinalColumn;
-    
+    private Label totalLabel;
+
     private Usuario usuario;
-    
+
     @Override
     public void setUsuario(Usuario usuario) {
         this.usuario = usuario;
         welcomeLabel.setText("Bienvenido, " + usuario.getNombre() + " " + usuario.getApellido());
-        loadCalificaciones();
+        loadMaterias();
     }
-    
+
     @FXML
     private void initialize() {
-        materiaColumn.setCellValueFactory(new PropertyValueFactory<>("materia"));
-        profesorColumn.setCellValueFactory(new PropertyValueFactory<>("profesor"));
         parcialColumn.setCellValueFactory(new PropertyValueFactory<>("parcial"));
-        subnotaNumColumn.setCellValueFactory(new PropertyValueFactory<>("subnotaNum"));
-        notaColumn.setCellValueFactory(new PropertyValueFactory<>("nota"));
-        totalParcialColumn.setCellValueFactory(new PropertyValueFactory<>("totalParcial"));
-        porcentajeFinalColumn.setCellValueFactory(new PropertyValueFactory<>("porcentajeFinal"));
+        numeroColumn.setCellValueFactory(new PropertyValueFactory<>("numero"));
+        valorColumn.setCellValueFactory(new PropertyValueFactory<>("valor"));
+        materiaComboBox.setOnAction(e -> loadSubnotas());
     }
-    
-    private void loadCalificaciones() {
-        String sql = "SELECT c.id_calificacion, m.nombre as materia, u.nombre || ' ' || u.apellido as profesor, cu.id_materia, cu.id_profesor " +
-                "FROM Calificacion c " +
-                "JOIN Inscripcion i ON c.id_inscripcion = i.id_inscripcion " +
-                "JOIN Curso cu ON i.id_curso = cu.id_curso " +
-                "JOIN Materia m ON cu.id_materia = m.id_materia " +
-                "JOIN Profesor p ON cu.id_profesor = p.id_profesor " +
-                "JOIN Usuario u ON p.id_usuario = u.id_usuario " +
-                "JOIN Estudiante e ON i.id_estudiante = e.id_estudiante " +
-                "WHERE e.id_usuario = ?";
+
+    private void loadMaterias() {
+        ObservableList<MateriaItem> materias = FXCollections.observableArrayList();
+        String sql = "SELECT m.id_materia, m.nombre FROM Materia m " +
+                "JOIN Estudiante e ON m.id_carrera = e.id_carrera " +
+                "JOIN Usuario u ON e.id_usuario = u.id_usuario " +
+                "WHERE u.id_usuario = ?";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setInt(1, usuario.getIdUsuario());
             ResultSet rs = pstmt.executeQuery();
-            calificacionesTable.getItems().clear();
-            SubnotaDAOImpl subnotaDAO = new SubnotaDAOImpl();
-            ParcialDAOImpl parcialDAO = new ParcialDAOImpl();
-            List<Parcial> parciales = parcialDAO.findAll();
             while (rs.next()) {
-                int idCalificacion = rs.getInt("id_calificacion");
-                String materia = rs.getString("materia");
-                String profesor = rs.getString("profesor");
-                List<Subnota> subnotas = subnotaDAO.findByCalificacion(idCalificacion);
-                Map<Integer, List<Subnota>> subnotasPorParcial = new HashMap<>();
-                for (Subnota s : subnotas) {
-                    subnotasPorParcial.computeIfAbsent(s.getIdParcial(), k -> new ArrayList<>()).add(s);
-                }
-                double porcentajeFinal = 0;
-                boolean todosCompletos = true;
-                for (Parcial parcial : parciales) {
-                    List<Subnota> subnotasParcial = subnotasPorParcial.getOrDefault(parcial.getIdParcial(), Collections.emptyList());
-                    int esperado = parcial.getIdParcial() == 4 ? 4 : 3;
-                    double totalParcial = 0;
-                    if (subnotasParcial.size() == esperado) {
-                        for (Subnota s : subnotasParcial) totalParcial += s.getValor();
-                        porcentajeFinal += (totalParcial / (esperado * 10.0)) * parcial.getPorcentaje() * 100.0;
-                    } else {
-                        todosCompletos = false;
-                    }
-                    for (Subnota s : subnotasParcial) {
-                        calificacionesTable.getItems().add(new SubnotaRow(
-                            materia, profesor, parcial.getNombre(), s.getNumero(), s.getValor(),
-                            subnotasParcial.size() == esperado ? totalParcial : null,
-                            null
-                        ));
-                    }
-                }
-                // Agregar fila resumen de porcentaje final si todos los parciales están completos
-                if (todosCompletos) {
-                    calificacionesTable.getItems().add(new SubnotaRow(
-                        materia, profesor, "TOTAL", null, null, null, porcentajeFinal
-                    ));
-                }
+                materias.add(new MateriaItem(rs.getInt("id_materia"), rs.getString("nombre")));
             }
+            materiaComboBox.setItems(materias);
+            if (!materias.isEmpty()) materiaComboBox.setValue(materias.get(0));
         } catch (Exception e) {
-            showError("Error al cargar calificaciones: " + e.getMessage());
+            showError("Error al cargar materias: " + e.getMessage());
         }
     }
-    
+
+    private void loadSubnotas() {
+        MateriaItem materia = materiaComboBox.getValue();
+        if (materia == null) {
+            subnotasTable.setItems(FXCollections.observableArrayList());
+            totalLabel.setText("");
+            return;
+        }
+        ObservableList<SubnotaRow> rows = FXCollections.observableArrayList();
+        double suma = 0.0;
+        String sql = "SELECT c.id_calificacion FROM Calificacion c " +
+                "JOIN Curso cu ON c.id_curso = cu.id_curso " +
+                "WHERE c.id_estudiante = (SELECT e.id_estudiante FROM Estudiante e WHERE e.id_usuario = ?) AND cu.id_materia = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, usuario.getIdUsuario());
+            pstmt.setInt(2, materia.id);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                int idCalificacion = rs.getInt("id_calificacion");
+                com.universidad.dao.SubnotaDAO subnotaDAO = new com.universidad.dao.impl.SubnotaDAOImpl();
+                for (com.universidad.model.Subnota s : subnotaDAO.findByCalificacion(idCalificacion)) {
+                    rows.add(new SubnotaRow(s.getParcial(), s.getNumero(), s.getValor()));
+                    suma += s.getValor();
+                }
+            }
+            subnotasTable.setItems(rows);
+            totalLabel.setText("Total: " + suma + " / 100 (" + (int)(suma) + "%)");
+        } catch (Exception e) {
+            showError("Error al cargar subnotas: " + e.getMessage());
+        }
+    }
+
     @FXML
     private void handleLogout() {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/Login.fxml"));
             Parent root = loader.load();
-            
             Stage stage = (Stage) welcomeLabel.getScene().getWindow();
             stage.setTitle("Gestión de Notas - Login");
             stage.setScene(new Scene(root));
@@ -148,7 +118,7 @@ public class EstudianteController implements MainController {
             showError("Error al cerrar sesión: " + e.getMessage());
         }
     }
-    
+
     private void showError(String message) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
         alert.setTitle("Error");
@@ -156,32 +126,24 @@ public class EstudianteController implements MainController {
         alert.setContentText(message);
         alert.showAndWait();
     }
-    
+
+    private static class MateriaItem {
+        int id;
+        String nombre;
+        MateriaItem(int id, String nombre) { this.id = id; this.nombre = nombre; }
+        @Override public String toString() { return nombre; }
+    }
     public static class SubnotaRow {
-        private final String materia;
-        private final String profesor;
-        private final String parcial;
-        private final Integer subnotaNum;
-        private final Double nota;
-        private final Double totalParcial;
-        private final Double porcentajeFinal;
-        
-        public SubnotaRow(String materia, String profesor, String parcial, Integer subnotaNum, Double nota, Double totalParcial, Double porcentajeFinal) {
-            this.materia = materia;
-            this.profesor = profesor;
+        private final int parcial;
+        private final int numero;
+        private final double valor;
+        public SubnotaRow(int parcial, int numero, double valor) {
             this.parcial = parcial;
-            this.subnotaNum = subnotaNum;
-            this.nota = nota;
-            this.totalParcial = totalParcial;
-            this.porcentajeFinal = porcentajeFinal;
+            this.numero = numero;
+            this.valor = valor;
         }
-        
-        public String getMateria() { return materia; }
-        public String getProfesor() { return profesor; }
-        public String getParcial() { return parcial; }
-        public Integer getSubnotaNum() { return subnotaNum; }
-        public Double getNota() { return nota; }
-        public Double getTotalParcial() { return totalParcial; }
-        public Double getPorcentajeFinal() { return porcentajeFinal; }
+        public int getParcial() { return parcial; }
+        public int getNumero() { return numero; }
+        public double getValor() { return valor; }
     }
 } 

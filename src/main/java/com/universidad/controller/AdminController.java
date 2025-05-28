@@ -5,6 +5,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 import com.universidad.model.Usuario;
@@ -31,10 +33,12 @@ import javafx.scene.control.TextField;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
 import javafx.scene.control.Tab;
+import javafx.scene.control.SelectionMode;
 
 public class AdminController implements MainController {
     
@@ -149,361 +153,6 @@ public class AdminController implements MainController {
     
     private void loadUsuarios() {
         refreshTable();
-    }
-    
-    private void showEditDialog(UsuarioRow row) {
-        Dialog<UsuarioInput> dialog = new Dialog<>();
-        dialog.setTitle("Editar Usuario");
-        dialog.setHeaderText("Editar información de " + row.getNombre() + " " + row.getApellido());
-        // Crear campos del diálogo
-        TextField cedulaField = new TextField(row.getCedula());
-        TextField nombreField = new TextField(row.getNombre());
-        TextField apellidoField = new TextField(row.getApellido());
-        PasswordField passwordField = new PasswordField();
-        Button generarPassBtn = new Button("Generar contraseña segura");
-        generarPassBtn.setOnAction(ev -> {
-            String pass = generarPasswordSegura();
-            passwordField.setText(pass);
-            ClipboardContent content = new ClipboardContent();
-            content.putString(pass);
-            Clipboard.getSystemClipboard().setContent(content);
-            showInfo("Contraseña generada y copiada al portapapeles.");
-        });
-        ComboBox<String> rolComboBox = new ComboBox<>();
-        rolComboBox.getItems().addAll("ESTUDIANTE", "PROFESOR", "ADMIN");
-        rolComboBox.setValue(row.getRol());
-        ComboBox<CarreraItem> carreraComboBox = new ComboBox<>();
-        // Cargar carreras dinámicamente
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement("SELECT id_carrera, nombre FROM Carrera ORDER BY nombre")) {
-            ResultSet rs = pstmt.executeQuery();
-            while (rs.next()) {
-                carreraComboBox.getItems().add(new CarreraItem(rs.getInt("id_carrera"), rs.getString("nombre")));
-            }
-        } catch (Exception e) {
-            showError("Error al cargar carreras: " + e.getMessage());
-        }
-        // ListView para materias (selección múltiple)
-        ListView<MateriaItem> materiasListView = new ListView<>();
-        materiasListView.getSelectionModel().setSelectionMode(javafx.scene.control.SelectionMode.MULTIPLE);
-        materiasListView.setPrefHeight(120);
-        // Al cambiar carrera, cargar materias de esa carrera
-        carreraComboBox.setOnAction(ev -> {
-            CarreraItem selected = carreraComboBox.getValue();
-            materiasListView.getItems().clear();
-            if (selected != null) {
-                try (Connection conn = DatabaseConnection.getConnection();
-                     PreparedStatement pstmt = conn.prepareStatement(
-                         "SELECT id_materia, nombre FROM Materia WHERE id_carrera = ? ORDER BY nombre")) {
-                    pstmt.setInt(1, selected.id);
-                    ResultSet rs = pstmt.executeQuery();
-                    while (rs.next()) {
-                        materiasListView.getItems().add(
-                            new MateriaItem(rs.getInt("id_materia"), rs.getString("nombre")));
-                    }
-                } catch (Exception e) {
-                    showError("Error al cargar materias: " + e.getMessage());
-                }
-            }
-        });
-        // Si es estudiante, cargar carrera y materias actuales
-        if ("ESTUDIANTE".equals(row.getRol())) {
-            try (Connection conn = DatabaseConnection.getConnection();
-                 PreparedStatement pstmt = conn.prepareStatement(
-                     "SELECT e.id_carrera, c.nombre FROM Estudiante e " +
-                     "JOIN Carrera c ON e.id_carrera = c.id_carrera " +
-                     "WHERE e.id_usuario = ?")) {
-                pstmt.setInt(1, row.getId());
-                ResultSet rs = pstmt.executeQuery();
-                if (rs.next()) {
-                    CarreraItem carrera = new CarreraItem(rs.getInt("id_carrera"), rs.getString("nombre"));
-                    carreraComboBox.setValue(carrera);
-                    carreraComboBox.getOnAction().handle(null);
-                }
-            } catch (Exception e) {
-                showError("Error al cargar datos del estudiante: " + e.getMessage());
-            }
-            // Seleccionar materias actuales
-            try (Connection conn = DatabaseConnection.getConnection();
-                 PreparedStatement pstmt = conn.prepareStatement(
-                     "SELECT m.id_materia FROM Materia m " +
-                     "JOIN Calificacion c ON m.id_materia = c.id_materia " +
-                     "WHERE c.id_estudiante = (SELECT id_estudiante FROM Estudiante WHERE id_usuario = ?)")) {
-                pstmt.setInt(1, row.getId());
-                ResultSet rs = pstmt.executeQuery();
-                while (rs.next()) {
-                    int idMateria = rs.getInt("id_materia");
-                    materiasListView.getItems().stream()
-                        .filter(item -> item.id == idMateria)
-                        .findFirst()
-                        .ifPresent(item -> materiasListView.getSelectionModel().select(item));
-                }
-            } catch (Exception e) {
-                showError("Error al cargar materias del estudiante: " + e.getMessage());
-            }
-        }
-        // Si es profesor, cargar todas las materias y marcar las que califica
-        if ("PROFESOR".equals(row.getRol())) {
-            materiasListView.getItems().clear();
-            try (Connection conn = DatabaseConnection.getConnection();
-                 PreparedStatement pstmt = conn.prepareStatement(
-                     "SELECT m.id_materia, m.nombre FROM Materia m ORDER BY m.nombre")) {
-                ResultSet rs = pstmt.executeQuery();
-                while (rs.next()) {
-                    materiasListView.getItems().add(
-                        new MateriaItem(rs.getInt("id_materia"), rs.getString("nombre")));
-                }
-            } catch (Exception e) {
-                showError("Error al cargar materias: " + e.getMessage());
-            }
-            // Seleccionar materias actuales
-            try (Connection conn = DatabaseConnection.getConnection();
-                 PreparedStatement pstmt = conn.prepareStatement(
-                     "SELECT cu.id_materia FROM Curso cu " +
-                     "JOIN Profesor p ON cu.id_profesor = p.id_profesor " +
-                     "WHERE p.id_usuario = ?")) {
-                pstmt.setInt(1, row.getId());
-                ResultSet rs = pstmt.executeQuery();
-                while (rs.next()) {
-                    int idMateria = rs.getInt("id_materia");
-                    materiasListView.getItems().stream()
-                        .filter(item -> item.id == idMateria)
-                        .findFirst()
-                        .ifPresent(item -> materiasListView.getSelectionModel().select(item));
-                }
-            } catch (Exception e) {
-                showError("Error al cargar materias del profesor: " + e.getMessage());
-            }
-        }
-        // Layout fijo: agrego todos los campos y solo cambio visibilidad
-        GridPane grid = new GridPane();
-        grid.setHgap(10);
-        grid.setVgap(10);
-        int layoutRow = 0;
-        grid.add(new Label("Cédula:"), 0, layoutRow); grid.add(cedulaField, 1, layoutRow++);
-        grid.add(new Label("Nombre:"), 0, layoutRow); grid.add(nombreField, 1, layoutRow++);
-        grid.add(new Label("Apellido:"), 0, layoutRow); grid.add(apellidoField, 1, layoutRow++);
-        grid.add(new Label("Contraseña:"), 0, layoutRow); grid.add(passwordField, 1, layoutRow);
-        grid.add(generarPassBtn, 2, layoutRow++);
-        grid.add(new Label("Rol:"), 0, layoutRow); grid.add(rolComboBox, 1, layoutRow++);
-        Label carreraLabel = new Label("Carrera:");
-        grid.add(carreraLabel, 0, layoutRow); grid.add(carreraComboBox, 1, layoutRow++);
-        Label materiasLabel = new Label("Materias:");
-        grid.add(materiasLabel, 0, layoutRow); grid.add(materiasListView, 1, layoutRow++);
-        // Mostrar/ocultar según rol
-        rolComboBox.setOnAction(ev -> {
-            String rol = rolComboBox.getValue();
-            boolean esEstudiante = "ESTUDIANTE".equals(rol);
-            boolean esProfesor = "PROFESOR".equals(rol);
-            carreraLabel.setVisible(esEstudiante);
-            carreraComboBox.setVisible(esEstudiante);
-            materiasLabel.setVisible(esEstudiante || esProfesor);
-            materiasListView.setVisible(esEstudiante || esProfesor);
-            if (esEstudiante) {
-                carreraComboBox.getOnAction().handle(null);
-            } else if (esProfesor) {
-                materiasListView.getItems().clear();
-                try (Connection conn = DatabaseConnection.getConnection();
-                     PreparedStatement pstmt = conn.prepareStatement(
-                         "SELECT id_materia, nombre FROM Materia ORDER BY nombre")) {
-                    ResultSet rs = pstmt.executeQuery();
-                    while (rs.next()) {
-                        materiasListView.getItems().add(
-                            new MateriaItem(rs.getInt("id_materia"), rs.getString("nombre")));
-                    }
-                } catch (Exception e) {
-                    showError("Error al cargar materias: " + e.getMessage());
-                }
-            }
-        });
-        // Trigger inicial
-        rolComboBox.getOnAction().handle(null);
-        dialog.getDialogPane().setContent(grid);
-        ButtonType saveButtonType = new ButtonType("Guardar", ButtonBar.ButtonData.OK_DONE);
-        dialog.getDialogPane().getButtonTypes().addAll(saveButtonType, ButtonType.CANCEL);
-        dialog.setResultConverter(dialogButton -> {
-            if (dialogButton == saveButtonType) {
-                String cedula = cedulaField.getText().trim();
-                String nombre = nombreField.getText().trim();
-                String apellido = apellidoField.getText().trim();
-                String password = passwordField.getText();
-                String rol = rolComboBox.getValue();
-                CarreraItem carrera = carreraComboBox.getValue();
-                var materiasSeleccionadas = materiasListView.getSelectionModel().getSelectedItems();
-                if (cedula.isEmpty() || nombre.isEmpty() || apellido.isEmpty() || rol == null) {
-                    showError("Todos los campos obligatorios deben estar llenos.");
-                    return null;
-                }
-                if (!cedula.matches("\\d{10}")) {
-                    showError("La cédula debe tener exactamente 10 dígitos numéricos.");
-                    return null;
-                }
-                if (!validarCedulaEcuatoriana(cedula)) {
-                    showError("Cédula ecuatoriana no válida.");
-                    return null;
-                }
-                if (!nombre.matches("[A-Za-záéíóúÁÉÍÓÚñÑ ]+")) {
-                    showError("El nombre solo puede contener letras y espacios.");
-                    return null;
-                }
-                if (!apellido.matches("[A-Za-záéíóúÁÉÍÓÚñÑ ]+")) {
-                    showError("El apellido solo puede contener letras y espacios.");
-                    return null;
-                }
-                if (password != null && !password.isEmpty() && password.length() < 6) {
-                    showError("La contraseña debe tener al menos 6 caracteres.");
-                    return null;
-                }
-                if ("ESTUDIANTE".equals(rol) && carrera == null) {
-                    showError("Debe seleccionar una carrera para el estudiante.");
-                    return null;
-                }
-                if ("PROFESOR".equals(rol)) {
-                    for (MateriaItem materia : materiasSeleccionadas) {
-                        try (Connection conn = DatabaseConnection.getConnection();
-                             PreparedStatement pstmt = conn.prepareStatement(
-                                 "SELECT cu.id_profesor, p.id_usuario FROM Curso cu JOIN Profesor p ON cu.id_profesor = p.id_profesor WHERE cu.id_materia = ?")) {
-                            pstmt.setInt(1, materia.getId());
-                            ResultSet rs = pstmt.executeQuery();
-                            if (rs.next()) {
-                                int idUsuarioAsignado = rs.getInt("id_usuario");
-                                // Si es edición, permitir si es el mismo usuario
-                                if (row == null || idUsuarioAsignado != row.getId()) {
-                                    showError("La materia '" + materia.getNombre() + "' ya está asignada a otro profesor.");
-                                    return null;
-                                }
-                            }
-                        } catch (Exception e) {
-                            showError("Error al validar materias: " + e.getMessage());
-                            return null;
-                        }
-                    }
-                }
-                // Validar que se seleccionen todas las materias de la carrera
-                int totalMaterias = 0;
-                try (Connection conn = DatabaseConnection.getConnection();
-                     PreparedStatement pstmt = conn.prepareStatement(
-                         "SELECT COUNT(*) FROM Materia WHERE id_carrera = ?")) {
-                    pstmt.setInt(1, carrera.getId());
-                    ResultSet rs = pstmt.executeQuery();
-                    if (rs.next()) totalMaterias = rs.getInt(1);
-                } catch (Exception e) {
-                    showError("Error al validar materias: " + e.getMessage());
-                    return null;
-                }
-                if (materiasSeleccionadas.size() != totalMaterias) {
-                    showError("El estudiante debe estar inscrito en todas las materias de su carrera.");
-                    return null;
-                }
-                return new UsuarioInput(
-                    cedula, nombre, apellido, 
-                    password,
-                    rol, carrera,
-                    "ESTUDIANTE".equals(rol) ? new java.util.ArrayList<MateriaItem>(materiasSeleccionadas) : null,
-                    "PROFESOR".equals(rol) ? new java.util.ArrayList<MateriaItem>(materiasSeleccionadas) : null
-                );
-            }
-            return null;
-        });
-        Optional<UsuarioInput> result = dialog.showAndWait();
-        result.ifPresent(input -> updateUsuario(row, input));
-    }
-    
-    private void updateUsuario(UsuarioRow row, UsuarioInput input) {
-        try (Connection conn = DatabaseConnection.getConnection()) {
-            conn.setAutoCommit(false);
-            try {
-                // Actualizar datos básicos del usuario
-                String sql = "UPDATE Usuario SET cedula = ?, nombre = ?, apellido = ?, rol = ? WHERE id_usuario = ?";
-                try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-                    pstmt.setString(1, input.getCedula());
-                    pstmt.setString(2, input.getNombre());
-                    pstmt.setString(3, input.getApellido());
-                    pstmt.setString(4, input.getRol());
-                    pstmt.setInt(5, row.getId());
-                    pstmt.executeUpdate();
-                }
-
-                // Si es profesor, actualizar materias a calificar
-                if ("PROFESOR".equals(input.getRol())) {
-                    int idProfesor = -1;
-                    try (PreparedStatement pstmt = conn.prepareStatement("SELECT id_profesor FROM Profesor WHERE id_usuario = ?")) {
-                        pstmt.setInt(1, row.getId());
-                        ResultSet rs = pstmt.executeQuery();
-                        if (rs.next()) idProfesor = rs.getInt(1);
-                    }
-
-                    if (idProfesor != -1) {
-                        try (PreparedStatement pstmt = conn.prepareStatement("DELETE FROM Curso WHERE id_profesor = ?")) {
-                            pstmt.setInt(1, idProfesor);
-                            pstmt.executeUpdate();
-                        }
-
-                        if (input.getMateriasProfesor() != null && !input.getMateriasProfesor().isEmpty()) {
-                            String sqlCurso = "INSERT INTO Curso (id_materia, id_profesor) VALUES (?, ?)";
-                            try (PreparedStatement pstmtCurso = conn.prepareStatement(sqlCurso)) {
-                                for (MateriaItem materia : input.getMateriasProfesor()) {
-                                    pstmtCurso.setInt(1, materia.getId());
-                                    pstmtCurso.setInt(2, idProfesor);
-                                    pstmtCurso.addBatch();
-                                }
-                                pstmtCurso.executeBatch();
-                            }
-                        }
-                    }
-                }
-
-                // Actualizar la tabla
-                refreshTable();
-
-                conn.commit();
-                showInfo("Usuario actualizado correctamente.");
-            } catch (Exception e) {
-                conn.rollback();
-                throw e;
-            }
-        } catch (Exception e) {
-            showError("Error al actualizar usuario: " + e.getMessage());
-        }
-    }
-    
-    private void showDeleteConfirmation(UsuarioRow row) {
-        // Si es admin, verificar cuántos admins hay
-        if ("ADMIN".equals(row.getRol())) {
-            int adminCount = 0;
-            for (UsuarioRow u : usuariosTable.getItems()) {
-                if ("ADMIN".equals(u.getRol())) adminCount++;
-            }
-            if (adminCount <= 1) {
-                showError("No se puede eliminar el último usuario administrador.");
-                return;
-            }
-        }
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-        alert.setTitle("Confirmar Eliminación");
-        alert.setHeaderText("¿Está seguro de eliminar a " + row.getNombre() + " " + row.getApellido() + "?");
-        alert.setContentText("Esta acción no se puede deshacer.");
-        Optional<ButtonType> result = alert.showAndWait();
-        if (result.isPresent() && result.get() == ButtonType.OK) {
-            deleteUsuario(row);
-        }
-    }
-    
-    private void deleteUsuario(UsuarioRow row) {
-        String sql = "DELETE FROM Usuario WHERE id_usuario = ?";
-        
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            
-            pstmt.setInt(1, row.getId());
-            pstmt.executeUpdate();
-            
-            // Actualizar la tabla
-            usuariosTable.getItems().remove(row);
-            
-        } catch (Exception e) {
-            showError("Error al eliminar usuario: " + e.getMessage());
-        }
     }
     
     @FXML
@@ -789,126 +438,355 @@ public class AdminController implements MainController {
             showError("Por favor seleccione un usuario para editar.");
             return;
         }
+        showEditDialog(selected);
+    }
 
-        // Validar campos obligatorios
-        if (cedulaField.getText().trim().isEmpty() || nombreField.getText().trim().isEmpty() || apellidoField.getText().trim().isEmpty() || passwordField.getText().trim().isEmpty() || rolCombo.getValue() == null) {
-            showError("Todos los campos son obligatorios.");
-            return;
-        }
+    private void showEditDialog(UsuarioRow row) {
+        Dialog<UsuarioInput> dialog = new Dialog<>();
+        dialog.setTitle("Editar Usuario");
+        dialog.setHeaderText("Editar información de " + row.getNombre() + " " + row.getApellido());
 
-        // Validar formato de cédula (solo números, longitud mínima)
-        if (!cedulaField.getText().trim().matches("\\d+") || cedulaField.getText().trim().length() < 5) {
-            showError("La cédula debe contener solo números y tener al menos 5 dígitos.");
-            return;
-        }
-
-        // Validar unicidad de cédula (excluyendo el usuario actual)
-        String sqlCheck = "SELECT COUNT(*) FROM Usuario WHERE cedula = ? AND id_usuario != ?";
+        TextField cedulaField = new TextField(row.getCedula());
+        TextField nombreField = new TextField(row.getNombre());
+        TextField apellidoField = new TextField(row.getApellido());
+        PasswordField passwordField = new PasswordField();
+        passwordField.setPromptText("Dejar en blanco para mantener la contraseña actual");
+        Button generarPassBtn = new Button("Generar contraseña segura");
+        generarPassBtn.setOnAction(ev -> {
+            String pass = generarPasswordSegura();
+            passwordField.setText(pass);
+            ClipboardContent content = new ClipboardContent();
+            content.putString(pass);
+            Clipboard.getSystemClipboard().setContent(content);
+            showInfo("Contraseña generada y copiada al portapapeles.");
+        });
+        ComboBox<String> rolComboBox = new ComboBox<>();
+        rolComboBox.getItems().addAll("ESTUDIANTE", "PROFESOR", "ADMIN");
+        rolComboBox.setValue(row.getRol());
+        ComboBox<CarreraItem> carreraComboBox = new ComboBox<>();
         try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sqlCheck)) {
-            pstmt.setString(1, cedulaField.getText().trim());
-            pstmt.setInt(2, selected.getId());
+             PreparedStatement pstmt = conn.prepareStatement("SELECT id_carrera, nombre FROM Carrera ORDER BY nombre")) {
             ResultSet rs = pstmt.executeQuery();
-            if (rs.next() && rs.getInt(1) > 0) {
-                showError("Ya existe otro usuario con esta cédula.");
-                return;
+            while (rs.next()) {
+                carreraComboBox.getItems().add(new CarreraItem(rs.getInt("id_carrera"), rs.getString("nombre")));
             }
-        } catch (SQLException e) {
-            e.printStackTrace();
-            showError("Error al validar la cédula: " + e.getMessage());
-            return;
+        } catch (Exception e) {
+            showError("Error al cargar carreras: " + e.getMessage());
         }
-
-        // Actualizar usuario
-        String sql = "UPDATE Usuario SET cedula = ?, nombre = ?, apellido = ?, password = ?, rol = ? WHERE id_usuario = ?";
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, cedulaField.getText().trim());
-            pstmt.setString(2, nombreField.getText().trim());
-            pstmt.setString(3, apellidoField.getText().trim());
-            pstmt.setString(4, passwordField.getText().trim());
-            pstmt.setString(5, rolCombo.getValue());
-            pstmt.setInt(6, selected.getId());
-            pstmt.executeUpdate();
-
-            // Actualizar carrera o materias según el rol
-            if (rolCombo.getValue().equals("Estudiante") && carreraCombo.getValue() != null) {
-                String sqlEstudiante = "UPDATE Estudiante SET id_carrera = ? WHERE id_usuario = ?";
-                try (PreparedStatement pstmtEst = conn.prepareStatement(sqlEstudiante)) {
-                    pstmtEst.setInt(1, carreraCombo.getValue().getId());
-                    pstmtEst.setInt(2, selected.getId());
-                    pstmtEst.executeUpdate();
+        ListView<MateriaItem> materiasListView = new ListView<>();
+        materiasListView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+        materiasListView.setPrefHeight(120);
+        carreraComboBox.setOnAction(ev -> {
+            CarreraItem selected = carreraComboBox.getValue();
+            materiasListView.getItems().clear();
+            if (selected != null) {
+                try (Connection conn = DatabaseConnection.getConnection();
+                     PreparedStatement pstmt = conn.prepareStatement(
+                         "SELECT id_materia, nombre FROM Materia WHERE id_carrera = ? ORDER BY nombre")) {
+                    pstmt.setInt(1, selected.id);
+                    ResultSet rs = pstmt.executeQuery();
+                    while (rs.next()) {
+                        materiasListView.getItems().add(
+                            new MateriaItem(rs.getInt("id_materia"), rs.getString("nombre")));
+                    }
+                } catch (Exception e) {
+                    showError("Error al cargar materias: " + e.getMessage());
                 }
-            } else if (rolCombo.getValue().equals("Profesor") && !materiasList.getSelectionModel().getSelectedItems().isEmpty()) {
-                String sqlProfesor = "DELETE FROM ProfesorMateria WHERE id_profesor = (SELECT id_profesor FROM Profesor WHERE id_usuario = ?)";
-                try (PreparedStatement pstmtProf = conn.prepareStatement(sqlProfesor)) {
-                    pstmtProf.setInt(1, selected.getId());
-                    pstmtProf.executeUpdate();
+            }
+        });
+        Label carreraLabel = new Label("Carrera:");
+        Label materiasLabel = new Label("Materias:");
+        GridPane grid = new GridPane();
+        grid.setHgap(10);
+        grid.setVgap(10);
+        int layoutRow = 0;
+        grid.add(new Label("Cédula:"), 0, layoutRow); grid.add(cedulaField, 1, layoutRow++);
+        grid.add(new Label("Nombre:"), 0, layoutRow); grid.add(nombreField, 1, layoutRow++);
+        grid.add(new Label("Apellido:"), 0, layoutRow); grid.add(apellidoField, 1, layoutRow++);
+        grid.add(new Label("Contraseña:"), 0, layoutRow); grid.add(passwordField, 1, layoutRow);
+        grid.add(generarPassBtn, 2, layoutRow++);
+        grid.add(new Label("Rol:"), 0, layoutRow); grid.add(rolComboBox, 1, layoutRow++);
+        grid.add(carreraLabel, 0, layoutRow); grid.add(carreraComboBox, 1, layoutRow++);
+        grid.add(materiasLabel, 0, layoutRow); grid.add(materiasListView, 1, layoutRow++);
+        rolComboBox.setOnAction(ev -> {
+            String rol = rolComboBox.getValue();
+            boolean esEstudiante = "ESTUDIANTE".equals(rol);
+            boolean esProfesor = "PROFESOR".equals(rol);
+            carreraLabel.setVisible(esEstudiante);
+            carreraComboBox.setVisible(esEstudiante);
+            materiasLabel.setVisible(esEstudiante || esProfesor);
+            materiasListView.setVisible(esEstudiante || esProfesor);
+            if (esEstudiante) {
+                carreraComboBox.getOnAction().handle(null);
+            } else if (esProfesor) {
+                materiasListView.getItems().clear();
+                try (Connection conn = DatabaseConnection.getConnection();
+                     PreparedStatement pstmt = conn.prepareStatement(
+                         "SELECT id_materia, nombre FROM Materia ORDER BY nombre")) {
+                    ResultSet rs = pstmt.executeQuery();
+                    while (rs.next()) {
+                        materiasListView.getItems().add(
+                            new MateriaItem(rs.getInt("id_materia"), rs.getString("nombre")));
+                    }
+                } catch (Exception e) {
+                    showError("Error al cargar materias: " + e.getMessage());
                 }
-                String sqlMaterias = "INSERT INTO ProfesorMateria (id_profesor, id_materia) SELECT id_profesor, ? FROM Profesor WHERE id_usuario = ?";
-                try (PreparedStatement pstmtMat = conn.prepareStatement(sqlMaterias)) {
-                    for (MateriaItem materia : materiasList.getSelectionModel().getSelectedItems()) {
-                        pstmtMat.setInt(1, materia.getId());
-                        pstmtMat.setInt(2, selected.getId());
-                        pstmtMat.executeUpdate();
+            }
+        });
+        rolComboBox.getOnAction().handle(null);
+        // Cargar datos actuales
+        if ("ESTUDIANTE".equals(row.getRol())) {
+            try (Connection conn = DatabaseConnection.getConnection();
+                 PreparedStatement pstmt = conn.prepareStatement(
+                     "SELECT e.id_carrera FROM Estudiante e WHERE e.id_usuario = ?")) {
+                pstmt.setInt(1, row.getId());
+                ResultSet rs = pstmt.executeQuery();
+                if (rs.next()) {
+                    int idCarrera = rs.getInt("id_carrera");
+                    for (CarreraItem carrera : carreraComboBox.getItems()) {
+                        if (carrera.getId() == idCarrera) {
+                            carreraComboBox.setValue(carrera);
+                            break;
+                        }
+                    }
+                    carreraComboBox.getOnAction().handle(null);
+                }
+            } catch (Exception e) {
+                showError("Error al cargar carrera del estudiante: " + e.getMessage());
+            }
+            // Seleccionar materias actuales (si aplica)
+            try (Connection conn = DatabaseConnection.getConnection();
+                 PreparedStatement pstmt = conn.prepareStatement(
+                     "SELECT m.id_materia FROM Materia m JOIN Calificacion c ON m.id_materia = c.id_materia JOIN Estudiante e ON c.id_estudiante = e.id_estudiante WHERE e.id_usuario = ?")) {
+                pstmt.setInt(1, row.getId());
+                ResultSet rs = pstmt.executeQuery();
+                while (rs.next()) {
+                    int idMateria = rs.getInt("id_materia");
+                    for (MateriaItem materia : materiasListView.getItems()) {
+                        if (materia.getId() == idMateria) {
+                            materiasListView.getSelectionModel().select(materia);
+                            break;
+                        }
                     }
                 }
+            } catch (Exception e) {
+                // Puede no haber materias, no es crítico
             }
-            showSuccess("Usuario actualizado correctamente.");
-            refreshTable();
-        } catch (SQLException e) {
-            e.printStackTrace();
+        } else if ("PROFESOR".equals(row.getRol())) {
+            // Cargar todas las materias
+            materiasListView.getItems().clear();
+            try (Connection conn = DatabaseConnection.getConnection();
+                 PreparedStatement pstmt = conn.prepareStatement(
+                     "SELECT id_materia, nombre FROM Materia ORDER BY nombre")) {
+                ResultSet rs = pstmt.executeQuery();
+                while (rs.next()) {
+                    materiasListView.getItems().add(new MateriaItem(rs.getInt("id_materia"), rs.getString("nombre")));
+                }
+            } catch (Exception e) {
+                // Puede no haber materias, no es crítico
+            }
+            // Seleccionar las materias que ya imparte
+            try (Connection conn = DatabaseConnection.getConnection();
+                 PreparedStatement pstmt = conn.prepareStatement(
+                     "SELECT m.id_materia FROM Materia m JOIN Curso c ON m.id_materia = c.id_materia JOIN Profesor p ON c.id_profesor = p.id_profesor WHERE p.id_usuario = ?")) {
+                pstmt.setInt(1, row.getId());
+                ResultSet rs = pstmt.executeQuery();
+                while (rs.next()) {
+                    int idMateria = rs.getInt("id_materia");
+                    for (MateriaItem materia : materiasListView.getItems()) {
+                        if (materia.getId() == idMateria) {
+                            materiasListView.getSelectionModel().select(materia);
+                            break;
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                // Puede no haber materias, no es crítico
+            }
+        }
+        dialog.getDialogPane().setContent(grid);
+        ButtonType saveButtonType = new ButtonType("Guardar", ButtonBar.ButtonData.OK_DONE);
+        dialog.getDialogPane().getButtonTypes().addAll(saveButtonType, ButtonType.CANCEL);
+        dialog.setResultConverter(dialogButton -> {
+            if (dialogButton == saveButtonType) {
+                String cedula = cedulaField.getText().trim();
+                String nombre = nombreField.getText().trim();
+                String apellido = apellidoField.getText().trim();
+                String password = passwordField.getText().trim();
+                String rol = rolComboBox.getValue();
+                CarreraItem carrera = carreraComboBox.getValue();
+                List<MateriaItem> materiasSeleccionadas = new ArrayList<>(materiasListView.getSelectionModel().getSelectedItems());
+                if (cedula.isEmpty() || nombre.isEmpty() || apellido.isEmpty() || rol == null) {
+                    showError("Todos los campos obligatorios deben estar llenos.");
+                    return null;
+                }
+                if (!cedula.matches("\\d{10}")) {
+                    showError("La cédula debe tener exactamente 10 dígitos numéricos.");
+                    return null;
+                }
+                if (!validarCedulaEcuatoriana(cedula)) {
+                    showError("Cédula ecuatoriana no válida.");
+                    return null;
+                }
+                if (!nombre.matches("[A-Za-záéíóúÁÉÍÓÚñÑ ]+")) {
+                    showError("El nombre solo puede contener letras y espacios.");
+                    return null;
+                }
+                if (!apellido.matches("[A-Za-záéíóúÁÉÍÓÚñÑ ]+")) {
+                    showError("El apellido solo puede contener letras y espacios.");
+                    return null;
+                }
+                if (!password.isEmpty() && password.length() < 6) {
+                    showError("La contraseña debe tener al menos 6 caracteres.");
+                    return null;
+                }
+                // Validar unicidad de cédula (excluyendo el usuario actual)
+                try (Connection conn = DatabaseConnection.getConnection();
+                     PreparedStatement pstmt = conn.prepareStatement(
+                         "SELECT COUNT(*) FROM Usuario WHERE cedula = ? AND id_usuario != ?")) {
+                    pstmt.setString(1, cedula);
+                    pstmt.setInt(2, row.getId());
+                    ResultSet rs = pstmt.executeQuery();
+                    if (rs.next() && rs.getInt(1) > 0) {
+                        showError("Ya existe otro usuario con esta cédula.");
+                        return null;
+                    }
+                } catch (Exception e) {
+                    showError("Error al validar la cédula: " + e.getMessage());
+                    return null;
+                }
+                if ("ESTUDIANTE".equals(rol) && carrera == null) {
+                    showError("Debe seleccionar una carrera para el estudiante.");
+                    return null;
+                }
+                if ("PROFESOR".equals(rol)) {
+                    for (MateriaItem materia : materiasSeleccionadas) {
+                        try (Connection conn = DatabaseConnection.getConnection();
+                             PreparedStatement pstmt = conn.prepareStatement(
+                                 "SELECT cu.id_profesor, p.id_usuario FROM Curso cu JOIN Profesor p ON cu.id_profesor = p.id_profesor WHERE cu.id_materia = ?")) {
+                            pstmt.setInt(1, materia.getId());
+                            ResultSet rs = pstmt.executeQuery();
+                            if (rs.next()) {
+                                int idUsuarioAsignado = rs.getInt("id_usuario");
+                                if (idUsuarioAsignado != row.getId()) {
+                                    showError("La materia '" + materia.getNombre() + "' ya está asignada a otro profesor.");
+                                    return null;
+                                }
+                            }
+                        } catch (Exception e) {
+                            showError("Error al validar materias: " + e.getMessage());
+                            return null;
+                        }
+                    }
+                }
+                return new UsuarioInput(
+                    cedula, nombre, apellido, 
+                    password,
+                    rol, carrera,
+                    "ESTUDIANTE".equals(rol) ? new ArrayList<>(materiasSeleccionadas) : null,
+                    "PROFESOR".equals(rol) ? new ArrayList<>(materiasSeleccionadas) : null
+                );
+            }
+            return null;
+        });
+        Optional<UsuarioInput> result = dialog.showAndWait();
+        result.ifPresent(input -> updateUsuario(row, input));
+    }
+
+    private void updateUsuario(UsuarioRow row, UsuarioInput input) {
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            conn.setAutoCommit(false);
+            try {
+                // Actualizar datos básicos del usuario
+                String sql = "UPDATE Usuario SET cedula = ?, nombre = ?, apellido, rol = ? WHERE id_usuario = ?";
+                try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                    pstmt.setString(1, input.getCedula());
+                    pstmt.setString(2, input.getNombre());
+                    pstmt.setString(3, input.getApellido());
+                    pstmt.setString(4, input.getRol());
+                    pstmt.setInt(5, row.getId());
+                    pstmt.executeUpdate();
+                }
+
+                // Si es profesor, actualizar materias a calificar
+                if ("PROFESOR".equals(input.getRol())) {
+                    int idProfesor = -1;
+                    try (PreparedStatement pstmt = conn.prepareStatement("SELECT id_profesor FROM Profesor WHERE id_usuario = ?")) {
+                        pstmt.setInt(1, row.getId());
+                        ResultSet rs = pstmt.executeQuery();
+                        if (rs.next()) idProfesor = rs.getInt(1);
+                    }
+
+                    if (idProfesor != -1) {
+                        try (PreparedStatement pstmt = conn.prepareStatement("DELETE FROM Curso WHERE id_profesor = ?")) {
+                            pstmt.setInt(1, idProfesor);
+                            pstmt.executeUpdate();
+                        }
+
+                        if (input.getMateriasProfesor() != null && !input.getMateriasProfesor().isEmpty()) {
+                            String sqlCurso = "INSERT INTO Curso (id_materia, id_profesor) VALUES (?, ?)";
+                            try (PreparedStatement pstmtCurso = conn.prepareStatement(sqlCurso)) {
+                                for (MateriaItem materia : input.getMateriasProfesor()) {
+                                    pstmtCurso.setInt(1, materia.getId());
+                                    pstmtCurso.setInt(2, idProfesor);
+                                    pstmtCurso.addBatch();
+                                }
+                                pstmtCurso.executeBatch();
+                            }
+                        }
+                    }
+                }
+
+                // Actualizar la tabla
+                refreshTable();
+
+                conn.commit();
+                showInfo("Usuario actualizado correctamente.");
+            } catch (Exception e) {
+                conn.rollback();
+                throw e;
+            }
+        } catch (Exception e) {
             showError("Error al actualizar usuario: " + e.getMessage());
         }
     }
-
-    @FXML
-    private void handleEliminarUsuario() {
-        UsuarioRow selected = usuariosTable.getSelectionModel().getSelectedItem();
-        if (selected == null) {
-            showError("Por favor seleccione un usuario para eliminar.");
-            return;
+    
+    private void showDeleteConfirmation(UsuarioRow row) {
+        // Si es admin, verificar cuántos admins hay
+        if ("ADMIN".equals(row.getRol())) {
+            int adminCount = 0;
+            for (UsuarioRow u : usuariosTable.getItems()) {
+                if ("ADMIN".equals(u.getRol())) adminCount++;
+            }
+            if (adminCount <= 1) {
+                showError("No se puede eliminar el último usuario administrador.");
+                return;
+            }
         }
-
-        // Confirmación antes de eliminar
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-        alert.setTitle("Confirmar eliminación");
-        alert.setHeaderText("¿Está seguro de eliminar este usuario?");
+        alert.setTitle("Confirmar Eliminación");
+        alert.setHeaderText("¿Está seguro de eliminar a " + row.getNombre() + " " + row.getApellido() + "?");
         alert.setContentText("Esta acción no se puede deshacer.");
         Optional<ButtonType> result = alert.showAndWait();
         if (result.isPresent() && result.get() == ButtonType.OK) {
-            deleteUsuario(selected);
+            deleteUsuario(row);
         }
     }
-
-    private void refreshTable() {
-        usuariosTable.getItems().clear();
-        String sql = "SELECT u.id_usuario, u.cedula, u.nombre, u.apellido, u.rol, c.nombre as carrera, " +
-                "GROUP_CONCAT(DISTINCT m.nombre) as materias " +
-                "FROM Usuario u " +
-                "LEFT JOIN Estudiante e ON u.id_usuario = e.id_usuario " +
-                "LEFT JOIN Carrera c ON e.id_carrera = c.id_carrera " +
-                "LEFT JOIN Profesor p ON u.id_usuario = p.id_usuario " +
-                "LEFT JOIN Curso cu ON p.id_profesor = cu.id_profesor " +
-                "LEFT JOIN Materia m ON cu.id_materia = m.id_materia " +
-                "GROUP BY u.id_usuario";
+    
+    private void deleteUsuario(UsuarioRow row) {
+        String sql = "DELETE FROM Usuario WHERE id_usuario = ?";
+        
         try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql);
-             ResultSet rs = pstmt.executeQuery()) {
-            while (rs.next()) {
-                usuariosTable.getItems().add(new UsuarioRow(
-                    rs.getInt("id_usuario"),
-                    rs.getString("cedula"),
-                    rs.getString("nombre"),
-                    rs.getString("apellido"),
-                    rs.getString("rol"),
-                    rs.getString("carrera"),
-                    rs.getString("materias")
-                ));
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-            showError("Error al cargar usuarios: " + e.getMessage());
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setInt(1, row.getId());
+            pstmt.executeUpdate();
+            
+            // Actualizar la tabla
+            usuariosTable.getItems().remove(row);
+            
+        } catch (Exception e) {
+            showError("Error al eliminar usuario: " + e.getMessage());
         }
     }
 
@@ -1577,5 +1455,46 @@ public class AdminController implements MainController {
         } catch (Exception e) {
             showError("Error al sincronizar calificaciones: " + e.getMessage());
         }
+    }
+
+    private void refreshTable() {
+        usuariosTable.getItems().clear();
+        String sql = "SELECT u.id_usuario, u.cedula, u.nombre, u.apellido, u.rol, c.nombre as carrera, " +
+                "GROUP_CONCAT(DISTINCT m.nombre) as materias " +
+                "FROM Usuario u " +
+                "LEFT JOIN Estudiante e ON u.id_usuario = e.id_usuario " +
+                "LEFT JOIN Carrera c ON e.id_carrera = c.id_carrera " +
+                "LEFT JOIN Profesor p ON u.id_usuario = p.id_usuario " +
+                "LEFT JOIN Curso cu ON p.id_profesor = cu.id_profesor " +
+                "LEFT JOIN Materia m ON cu.id_materia = m.id_materia " +
+                "GROUP BY u.id_usuario";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql);
+             ResultSet rs = pstmt.executeQuery()) {
+            while (rs.next()) {
+                usuariosTable.getItems().add(new UsuarioRow(
+                    rs.getInt("id_usuario"),
+                    rs.getString("cedula"),
+                    rs.getString("nombre"),
+                    rs.getString("apellido"),
+                    rs.getString("rol"),
+                    rs.getString("carrera"),
+                    rs.getString("materias")
+                ));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            showError("Error al cargar usuarios: " + e.getMessage());
+        }
+    }
+
+    @FXML
+    private void handleEliminarUsuario() {
+        UsuarioRow selected = usuariosTable.getSelectionModel().getSelectedItem();
+        if (selected == null) {
+            showError("Por favor seleccione un usuario para eliminar.");
+            return;
+        }
+        showDeleteConfirmation(selected);
     }
 } 

@@ -112,12 +112,31 @@ public class ProfesorController implements MainController {
             showError("Por favor seleccione un curso");
             return;
         }
-        // Obtener estudiantes del curso
+        // Obtener id_materia y carrera del curso
+        int idMateria = -1;
+        int idCarrera = -1;
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(
+                 "SELECT m.id_materia, m.id_carrera FROM Curso c JOIN Materia m ON c.id_materia = m.id_materia WHERE c.id_curso = ?")) {
+            pstmt.setInt(1, selectedCurso.getIdCurso());
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                idMateria = rs.getInt("id_materia");
+                idCarrera = rs.getInt("id_carrera");
+            }
+        } catch (Exception e) {
+            showError("Error al obtener datos del curso: " + e.getMessage());
+            return;
+        }
+        if (idCarrera == -1) {
+            showError("No se pudo determinar la carrera del curso.");
+            return;
+        }
         List<EstudianteItem> estudiantes = new ArrayList<>();
-        String sqlEst = "SELECT e.id_estudiante, u.nombre || ' ' || u.apellido as nombre FROM Estudiante e JOIN Usuario u ON e.id_usuario = u.id_usuario JOIN Calificacion c ON c.id_estudiante = e.id_estudiante WHERE c.id_curso = ?";
+        String sqlEst = "SELECT e.id_estudiante, u.nombre || ' ' || u.apellido as nombre FROM Estudiante e JOIN Usuario u ON e.id_usuario = u.id_usuario WHERE e.id_carrera = ?";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sqlEst)) {
-            pstmt.setInt(1, selectedCurso.getIdCurso());
+            pstmt.setInt(1, idCarrera);
             ResultSet rs = pstmt.executeQuery();
             while (rs.next()) {
                 estudiantes.add(new EstudianteItem(rs.getInt("id_estudiante"), rs.getString("nombre")));
@@ -127,7 +146,7 @@ public class ProfesorController implements MainController {
             return;
         }
         if (estudiantes.isEmpty()) {
-            showError("No hay estudiantes en este curso.");
+            showError("No hay estudiantes en la carrera de este curso.");
             return;
         }
         // Diálogo para agregar subnota
@@ -201,7 +220,18 @@ public class ProfesorController implements MainController {
                     if (rs.next()) idCalificacion = rs.getInt("id_calificacion");
                 }
                 if (idCalificacion == -1) {
-                    showError("No se encontró la calificación para el estudiante seleccionado.");
+                    // Crear registro en Calificacion
+                    String sqlInsertCal = "INSERT INTO Calificacion (id_estudiante, id_curso) VALUES (?, ?)";
+                    try (PreparedStatement pstmt = conn.prepareStatement(sqlInsertCal, PreparedStatement.RETURN_GENERATED_KEYS)) {
+                        pstmt.setInt(1, input.estudiante.id);
+                        pstmt.setInt(2, selectedCurso.getIdCurso());
+                        pstmt.executeUpdate();
+                        ResultSet rs = pstmt.getGeneratedKeys();
+                        if (rs.next()) idCalificacion = rs.getInt(1);
+                    }
+                }
+                if (idCalificacion == -1) {
+                    showError("No se pudo crear la calificación para el estudiante seleccionado.");
                     return;
                 }
                 // Validar máximo 10 subnotas

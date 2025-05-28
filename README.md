@@ -2,6 +2,15 @@
 
 Aplicación de escritorio en Java y JavaFX con SQLite para la gestión de calificaciones universitarias. Incluye roles de estudiante, profesor y administrador con funciones de consulta, asignación de notas y operaciones CRUD.
 
+## Características principales
+
+- **CRUD completo** de usuarios (estudiantes, profesores, admins), materias y carreras, con validaciones robustas.
+- **Vista de profesor:** permite calificar a cualquier estudiante de la carrera asociada a la materia, aunque no tenga notas previas.
+- **Sincronización automática** de la tabla de calificaciones tras cualquier cambio en el CRUD (agregar, editar, eliminar estudiantes, profesores, materias o cursos).
+- **Validaciones estrictas**: cédula única y válida, campos obligatorios, no duplicados, restricciones de asignación de materias y carreras.
+- **Mensajes claros** de error y éxito en todas las operaciones.
+- **UX mejorada:** formularios dinámicos, refresco automático de tablas, botones de acción intuitivos.
+
 ## Características Implementadas
 
 ### Roles de Usuario
@@ -62,7 +71,7 @@ src/
 │       └── sql/                   # Scripts SQL
 ```
 
-### Estado Actual
+### Estado actual
 
 - ✅ Sistema de autenticación
 - ✅ Gestión de calificaciones y subnotas con reglas estrictas
@@ -71,12 +80,34 @@ src/
 - ✅ Interfaz de administrador (gestión de usuarios, carreras y materias)
 - ✅ Base de datos SQLite
 - ✅ Cálculo automático de notas
+- ✅ CRUD de usuarios, materias y carreras
+- ✅ Validaciones y sincronización de datos
+- ✅ Vista de profesor universal y robusta
+- ✅ Mensajes claros y experiencia de usuario mejorada
 
 ### Próximas Mejoras
 
 - Mejorar el diseño de la interfaz
 - Agregar reportes y estadísticas
 - Implementar sistema de recuperación de contraseña
+
+## Cómo probar la funcionalidad
+
+1. **Agregar estudiantes, profesores, materias y carreras** desde el panel de administrador.
+2. **Asignar materias a estudiantes y profesores** (los profesores solo pueden calificar materias que les han sido asignadas).
+3. **Iniciar sesión como profesor:**
+   - Selecciona un curso (materia).
+   - Verás todos los estudiantes de la carrera, aunque sean nuevos o no tengan notas.
+   - Puedes calificar a cualquier estudiante; si no tiene registro previo, el sistema lo crea automáticamente.
+4. **Editar o eliminar usuarios, materias o carreras:**
+   - El sistema sincroniza automáticamente las calificaciones y relaciones.
+   - No se pueden eliminar carreras o materias si tienen dependencias activas.
+
+## Recomendaciones
+
+- Siempre refresca la tabla tras cualquier operación para ver los cambios reflejados.
+- Usa el botón de "Generar contraseña segura" al crear usuarios para mayor seguridad.
+- Si tienes problemas con la visualización de estudiantes en la vista de profesor, asegúrate de que la sincronización de calificaciones esté activa (esto ya está automatizado en el sistema).
 
 ---
 

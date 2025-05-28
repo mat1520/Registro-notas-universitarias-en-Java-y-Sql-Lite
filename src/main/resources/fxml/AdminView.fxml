@@ -33,7 +33,7 @@
                 </TableView>
             </VBox>
         </Tab>
-        <Tab text="Materias">
+        <Tab text="Materias" closable="false">
             <AnchorPane>
                 <TableView fx:id="materiasTable" layoutX="20" layoutY="20" prefWidth="400" prefHeight="300">
                     <columns>
@@ -42,6 +42,20 @@
                     </columns>
                 </TableView>
                 <Button fx:id="agregarMateriaButton" text="Agregar Materia" layoutX="20" layoutY="330" onAction="#handleAgregarMateria" />
+                <Button fx:id="editarMateriaButton" text="Editar Materia" layoutX="150" layoutY="330" onAction="#handleEditarMateria" />
+                <Button fx:id="eliminarMateriaButton" text="Eliminar Materia" layoutX="280" layoutY="330" onAction="#handleEliminarMateria" />
+            </AnchorPane>
+        </Tab>
+        <Tab text="Carreras" closable="false">
+            <AnchorPane>
+                <TableView fx:id="carrerasTable" layoutX="20" layoutY="20" prefWidth="400" prefHeight="300">
+                    <columns>
+                        <TableColumn fx:id="carreraNombreColumn" text="Nombre" prefWidth="300" />
+                    </columns>
+                </TableView>
+                <Button fx:id="agregarCarreraButton" text="Agregar Carrera" layoutX="20" layoutY="330" onAction="#handleAgregarCarrera" />
+                <Button fx:id="editarCarreraButton" text="Editar Carrera" layoutX="150" layoutY="330" onAction="#handleEditarCarrera" />
+                <Button fx:id="eliminarCarreraButton" text="Eliminar Carrera" layoutX="280" layoutY="330" onAction="#handleEliminarCarrera" />
             </AnchorPane>
         </Tab>
     </TabPane>

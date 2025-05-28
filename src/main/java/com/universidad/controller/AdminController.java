@@ -98,6 +98,15 @@ public class AdminController implements MainController {
     @FXML
     private Button agregarMateriaButton;
     
+    @FXML
+    private TableView<CarreraRow> carrerasTable;
+    
+    @FXML
+    private TableColumn<CarreraRow, String> carreraNombreColumn;
+    
+    @FXML
+    private Button agregarCarreraButton;
+    
     private Usuario usuario;
     
     @Override
@@ -148,6 +157,11 @@ public class AdminController implements MainController {
             materiaNombreColumn.setCellValueFactory(new PropertyValueFactory<>("nombre"));
             materiaCarreraColumn.setCellValueFactory(new PropertyValueFactory<>("carrera"));
             refreshMateriasTable();
+        }
+
+        if (carrerasTable != null) {
+            carreraNombreColumn.setCellValueFactory(new PropertyValueFactory<>("nombre"));
+            refreshCarrerasTable();
         }
     }
     
@@ -701,11 +715,20 @@ public class AdminController implements MainController {
                                 int idEstudiante = rsEst.next() ? rsEst.getInt(1) : -1;
                                 if (input.getMateriasEstudiante() != null) {
                                     for (MateriaItem materia : input.getMateriasEstudiante()) {
-                                        String sqlCal = "INSERT INTO Calificacion (id_estudiante, id_materia) VALUES (?, ?)";
-                                        try (PreparedStatement pstmtCal = conn.prepareStatement(sqlCal)) {
-                                            pstmtCal.setInt(1, idEstudiante);
-                                            pstmtCal.setInt(2, materia.getId());
-                                            pstmtCal.executeUpdate();
+                                        // Crear calificaciones para todos los cursos de esa materia
+                                        String sqlCursos = "SELECT id_curso FROM Curso WHERE id_materia = ?";
+                                        try (PreparedStatement pstmtCursos = conn.prepareStatement(sqlCursos)) {
+                                            pstmtCursos.setInt(1, materia.getId());
+                                            ResultSet rsCursos = pstmtCursos.executeQuery();
+                                            while (rsCursos.next()) {
+                                                int idCurso = rsCursos.getInt("id_curso");
+                                                String sqlCal = "INSERT OR IGNORE INTO Calificacion (id_estudiante, id_curso) VALUES (?, ?)";
+                                                try (PreparedStatement pstmtCal = conn.prepareStatement(sqlCal)) {
+                                                    pstmtCal.setInt(1, idEstudiante);
+                                                    pstmtCal.setInt(2, idCurso);
+                                                    pstmtCal.executeUpdate();
+                                                }
+                                            }
                                         }
                                     }
                                 }
@@ -719,10 +742,29 @@ public class AdminController implements MainController {
                                 int idProfesor = rsProf.next() ? rsProf.getInt(1) : -1;
                                 for (MateriaItem materia : input.getMateriasProfesor()) {
                                     String sqlCurso = "INSERT INTO Curso (id_materia, id_profesor) VALUES (?, ?)";
-                                    try (PreparedStatement pstmtCurso = conn.prepareStatement(sqlCurso)) {
+                                    try (PreparedStatement pstmtCurso = conn.prepareStatement(sqlCurso, Statement.RETURN_GENERATED_KEYS)) {
                                         pstmtCurso.setInt(1, materia.getId());
                                         pstmtCurso.setInt(2, idProfesor);
                                         pstmtCurso.executeUpdate();
+                                        ResultSet rsCurso = pstmtCurso.getGeneratedKeys();
+                                        int idCurso = rsCurso.next() ? rsCurso.getInt(1) : -1;
+                                        // Crear calificaciones para todos los estudiantes inscritos en esa materia
+                                        String sqlEsts = "SELECT e.id_estudiante FROM Estudiante e JOIN Usuario u ON e.id_usuario = u.id_usuario JOIN Calificacion c2 ON c2.id_estudiante = e.id_estudiante WHERE c2.id_curso = ? UNION SELECT e.id_estudiante FROM Estudiante e JOIN Usuario u ON e.id_usuario = u.id_usuario JOIN Calificacion c2 ON c2.id_estudiante = e.id_estudiante WHERE c2.id_curso != ? AND e.id_estudiante NOT IN (SELECT id_estudiante FROM Calificacion WHERE id_curso = ?)";
+                                        try (PreparedStatement pstmtEsts = conn.prepareStatement(sqlEsts)) {
+                                            pstmtEsts.setInt(1, idCurso);
+                                            pstmtEsts.setInt(2, idCurso);
+                                            pstmtEsts.setInt(3, idCurso);
+                                            ResultSet rsEsts = pstmtEsts.executeQuery();
+                                            while (rsEsts.next()) {
+                                                int idEstudiante = rsEsts.getInt("id_estudiante");
+                                                String sqlCal = "INSERT OR IGNORE INTO Calificacion (id_estudiante, id_curso) VALUES (?, ?)";
+                                                try (PreparedStatement pstmtCal = conn.prepareStatement(sqlCal)) {
+                                                    pstmtCal.setInt(1, idEstudiante);
+                                                    pstmtCal.setInt(2, idCurso);
+                                                    pstmtCal.executeUpdate();
+                                                }
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -1275,6 +1317,250 @@ public class AdminController implements MainController {
             refreshMateriasTable();
         } catch (Exception e) {
             showError("Error al eliminar materia: " + e.getMessage());
+        }
+    }
+
+    private void refreshCarrerasTable() {
+        if (carrerasTable == null) return;
+        carrerasTable.getItems().clear();
+        String sql = "SELECT id_carrera, nombre FROM Carrera ORDER BY nombre";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql);
+             ResultSet rs = pstmt.executeQuery()) {
+            while (rs.next()) {
+                carrerasTable.getItems().add(new CarreraRow(
+                    rs.getInt("id_carrera"),
+                    rs.getString("nombre")
+                ));
+            }
+        } catch (Exception e) {
+            showError("Error al cargar carreras: " + e.getMessage());
+        }
+    }
+
+    @FXML
+    private void handleAgregarCarrera() {
+        Dialog<CarreraInput> dialog = new Dialog<>();
+        dialog.setTitle("Agregar Carrera");
+        dialog.setHeaderText("Ingrese el nombre de la nueva carrera");
+        TextField nombreField = new TextField();
+        GridPane grid = new GridPane();
+        grid.setHgap(10);
+        grid.setVgap(10);
+        grid.add(new Label("Nombre de la carrera:"), 0, 0); grid.add(nombreField, 1, 0);
+        dialog.getDialogPane().setContent(grid);
+        ButtonType saveButtonType = new ButtonType("Guardar", ButtonBar.ButtonData.OK_DONE);
+        dialog.getDialogPane().getButtonTypes().addAll(saveButtonType, ButtonType.CANCEL);
+        dialog.setResultConverter(dialogButton -> {
+            if (dialogButton == saveButtonType) {
+                String nombre = nombreField.getText().trim();
+                if (nombre.isEmpty()) {
+                    showError("El nombre es obligatorio.");
+                    return null;
+                }
+                if (!nombre.matches("[A-Za-záéíóúÁÉÍÓÚñÑ0-9 ]+")) {
+                    showError("El nombre solo puede contener letras, números y espacios.");
+                    return null;
+                }
+                // Validar duplicado
+                String sql = "SELECT COUNT(*) FROM Carrera WHERE nombre = ?";
+                try (Connection conn = DatabaseConnection.getConnection();
+                     PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                    pstmt.setString(1, nombre);
+                    ResultSet rs = pstmt.executeQuery();
+                    if (rs.next() && rs.getInt(1) > 0) {
+                        showError("Ya existe una carrera con ese nombre.");
+                        return null;
+                    }
+                } catch (Exception e) {
+                    showError("Error al validar carrera: " + e.getMessage());
+                    return null;
+                }
+                return new CarreraInput(nombre);
+            }
+            return null;
+        });
+        Optional<CarreraInput> result = dialog.showAndWait();
+        result.ifPresent(input -> agregarCarrera(input));
+    }
+
+    private void agregarCarrera(CarreraInput input) {
+        String sql = "INSERT INTO Carrera (nombre) VALUES (?)";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, input.getNombre());
+            pstmt.executeUpdate();
+            showSuccess("Carrera agregada correctamente.");
+            refreshCarrerasTable();
+        } catch (Exception e) {
+            showError("Error al agregar carrera: " + e.getMessage());
+        }
+    }
+
+    @FXML
+    private void handleEditarCarrera() {
+        CarreraRow selected = carrerasTable.getSelectionModel().getSelectedItem();
+        if (selected == null) {
+            showError("Por favor seleccione una carrera para editar.");
+            return;
+        }
+        Dialog<CarreraInput> dialog = new Dialog<>();
+        dialog.setTitle("Editar Carrera");
+        dialog.setHeaderText("Editar nombre de la carrera");
+        TextField nombreField = new TextField(selected.getNombre());
+        GridPane grid = new GridPane();
+        grid.setHgap(10);
+        grid.setVgap(10);
+        grid.add(new Label("Nombre de la carrera:"), 0, 0); grid.add(nombreField, 1, 0);
+        dialog.getDialogPane().setContent(grid);
+        ButtonType saveButtonType = new ButtonType("Guardar", ButtonBar.ButtonData.OK_DONE);
+        dialog.getDialogPane().getButtonTypes().addAll(saveButtonType, ButtonType.CANCEL);
+        dialog.setResultConverter(dialogButton -> {
+            if (dialogButton == saveButtonType) {
+                String nombre = nombreField.getText().trim();
+                if (nombre.isEmpty()) {
+                    showError("El nombre es obligatorio.");
+                    return null;
+                }
+                if (!nombre.matches("[A-Za-záéíóúÁÉÍÓÚñÑ0-9 ]+")) {
+                    showError("El nombre solo puede contener letras, números y espacios.");
+                    return null;
+                }
+                // Validar duplicado (excluyendo la carrera actual)
+                String sql = "SELECT COUNT(*) FROM Carrera WHERE nombre = ? AND id_carrera != ?";
+                try (Connection conn = DatabaseConnection.getConnection();
+                     PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                    pstmt.setString(1, nombre);
+                    pstmt.setInt(2, selected.getId());
+                    ResultSet rs = pstmt.executeQuery();
+                    if (rs.next() && rs.getInt(1) > 0) {
+                        showError("Ya existe una carrera con ese nombre.");
+                        return null;
+                    }
+                } catch (Exception e) {
+                    showError("Error al validar carrera: " + e.getMessage());
+                    return null;
+                }
+                return new CarreraInput(nombre);
+            }
+            return null;
+        });
+        Optional<CarreraInput> result = dialog.showAndWait();
+        result.ifPresent(input -> actualizarCarrera(selected.getId(), input));
+    }
+
+    private void actualizarCarrera(int idCarrera, CarreraInput input) {
+        String sql = "UPDATE Carrera SET nombre = ? WHERE id_carrera = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, input.getNombre());
+            pstmt.setInt(2, idCarrera);
+            pstmt.executeUpdate();
+            showSuccess("Carrera actualizada correctamente.");
+            refreshCarrerasTable();
+        } catch (Exception e) {
+            showError("Error al actualizar carrera: " + e.getMessage());
+        }
+    }
+
+    @FXML
+    private void handleEliminarCarrera() {
+        CarreraRow selected = carrerasTable.getSelectionModel().getSelectedItem();
+        if (selected == null) {
+            showError("Por favor seleccione una carrera para eliminar.");
+            return;
+        }
+        // Validar que no tenga materias, estudiantes o profesores asociados
+        String sqlCheck = "SELECT COUNT(*) FROM Materia WHERE id_carrera = ? OR EXISTS (SELECT 1 FROM Estudiante WHERE id_carrera = ?)";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sqlCheck)) {
+            pstmt.setInt(1, selected.getId());
+            pstmt.setInt(2, selected.getId());
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next() && rs.getInt(1) > 0) {
+                showError("No se puede eliminar la carrera porque tiene materias o estudiantes asociados.");
+                return;
+            }
+        } catch (Exception e) {
+            showError("Error al validar carrera: " + e.getMessage());
+            return;
+        }
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle("Confirmar eliminación");
+        alert.setHeaderText("¿Está seguro de eliminar la carrera seleccionada?");
+        alert.setContentText("Esta acción no se puede deshacer.");
+        Optional<ButtonType> result = alert.showAndWait();
+        if (result.isPresent() && result.get() == ButtonType.OK) {
+            eliminarCarrera(selected.getId());
+        }
+    }
+
+    private void eliminarCarrera(int idCarrera) {
+        String sql = "DELETE FROM Carrera WHERE id_carrera = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, idCarrera);
+            pstmt.executeUpdate();
+            showSuccess("Carrera eliminada correctamente.");
+            refreshCarrerasTable();
+        } catch (Exception e) {
+            showError("Error al eliminar carrera: " + e.getMessage());
+        }
+    }
+
+    // Clase auxiliar para la tabla de carreras
+    public static class CarreraRow {
+        private int id;
+        private String nombre;
+        public CarreraRow(int id, String nombre) {
+            this.id = id; this.nombre = nombre;
+        }
+        public int getId() { return id; }
+        public String getNombre() { return nombre; }
+    }
+
+    public static class CarreraInput {
+        private final String nombre;
+        public CarreraInput(String nombre) { this.nombre = nombre; }
+        public String getNombre() { return nombre; }
+    }
+
+    // Método auxiliar para sincronizar Calificacion tras cualquier cambio
+    private void sincronizarCalificaciones() {
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            // 1. Para cada curso, asegurar que todos los estudiantes inscritos en la materia tengan calificación
+            String sqlCursos = "SELECT cu.id_curso, cu.id_materia FROM Curso cu";
+            try (PreparedStatement pstmtCursos = conn.prepareStatement(sqlCursos);
+                 ResultSet rsCursos = pstmtCursos.executeQuery()) {
+                while (rsCursos.next()) {
+                    int idCurso = rsCursos.getInt("id_curso");
+                    int idMateria = rsCursos.getInt("id_materia");
+                    // Buscar todos los estudiantes inscritos en esa materia
+                    String sqlEsts = "SELECT e.id_estudiante FROM Estudiante e JOIN Usuario u ON e.id_usuario = u.id_usuario JOIN Calificacion c2 ON c2.id_estudiante = e.id_estudiante WHERE c2.id_curso = ? UNION SELECT e.id_estudiante FROM Estudiante e JOIN Usuario u ON e.id_usuario = u.id_usuario JOIN Calificacion c2 ON c2.id_estudiante = e.id_estudiante WHERE c2.id_curso != ? AND e.id_estudiante NOT IN (SELECT id_estudiante FROM Calificacion WHERE id_curso = ?)";
+                    try (PreparedStatement pstmtEsts = conn.prepareStatement(sqlEsts)) {
+                        pstmtEsts.setInt(1, idCurso);
+                        pstmtEsts.setInt(2, idCurso);
+                        pstmtEsts.setInt(3, idCurso);
+                        ResultSet rsEsts = pstmtEsts.executeQuery();
+                        while (rsEsts.next()) {
+                            int idEstudiante = rsEsts.getInt("id_estudiante");
+                            String sqlCal = "INSERT OR IGNORE INTO Calificacion (id_estudiante, id_curso) VALUES (?, ?)";
+                            try (PreparedStatement pstmtCal = conn.prepareStatement(sqlCal)) {
+                                pstmtCal.setInt(1, idEstudiante);
+                                pstmtCal.setInt(2, idCurso);
+                                pstmtCal.executeUpdate();
+                            }
+                        }
+                    }
+                }
+            }
+            // 2. Eliminar calificaciones huérfanas (sin estudiante o curso válido)
+            String sqlClean = "DELETE FROM Calificacion WHERE id_estudiante NOT IN (SELECT id_estudiante FROM Estudiante) OR id_curso NOT IN (SELECT id_curso FROM Curso)";
+            try (PreparedStatement pstmtClean = conn.prepareStatement(sqlClean)) {
+                pstmtClean.executeUpdate();
+            }
+        } catch (Exception e) {
+            showError("Error al sincronizar calificaciones: " + e.getMessage());
         }
     }
 } 

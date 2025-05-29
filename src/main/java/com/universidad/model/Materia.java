@@ -2,14 +2,14 @@ package com.universidad.model;
 
 public class Materia {
     private Integer idMateria;
-    private String nombre;
+    private String nombre_materia;
     private Carrera carrera;
 
     public Materia() {}
 
-    public Materia(Integer idMateria, String nombre, Carrera carrera) {
+    public Materia(Integer idMateria, String nombre_materia, Carrera carrera) {
         this.idMateria = idMateria;
-        this.nombre = nombre;
+        this.nombre_materia = nombre_materia;
         this.carrera = carrera;
     }
 
@@ -22,12 +22,12 @@ public class Materia {
         this.idMateria = idMateria;
     }
 
-    public String getNombre() {
-        return nombre;
+    public String getNombre_materia() {
+        return nombre_materia;
     }
 
-    public void setNombre(String nombre) {
-        this.nombre = nombre;
+    public void setNombre_materia(String nombre_materia) {
+        this.nombre_materia = nombre_materia;
     }
 
     public Carrera getCarrera() {
@@ -40,6 +40,6 @@ public class Materia {
 
     @Override
     public String toString() {
-        return nombre;
+        return nombre_materia;
     }
-} 
+}

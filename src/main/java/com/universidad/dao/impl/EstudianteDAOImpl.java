@@ -133,14 +133,14 @@ public class EstudianteDAOImpl implements EstudianteDAO {
         Usuario usuario = new Usuario();
         usuario.setIdUsuario(rs.getInt("id_usuario"));
         usuario.setCedula(rs.getString("cedula"));
-        usuario.setNombre(rs.getString("nombre"));
-        usuario.setApellido(rs.getString("apellido"));
+        usuario.setNombre_usuario(rs.getString("nombre_usuario"));
+        usuario.setApellido_usuario(rs.getString("apellido_usuario"));
         usuario.setPassword(rs.getString("password"));
         usuario.setRol(rs.getString("rol"));
         
         Carrera carrera = new Carrera();
         carrera.setIdCarrera(rs.getInt("id_carrera"));
-        carrera.setNombre(rs.getString("nombre"));
+        carrera.setNombre_carrera(rs.getString("nombre_carrera"));
         
         Estudiante estudiante = new Estudiante();
         estudiante.setIdEstudiante(rs.getInt("id_estudiante"));

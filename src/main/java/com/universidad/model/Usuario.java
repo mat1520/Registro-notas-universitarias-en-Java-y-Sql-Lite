@@ -3,18 +3,18 @@ package com.universidad.model;
 public class Usuario {
     private Integer idUsuario;
     private String cedula;
-    private String nombre;
-    private String apellido;
+    private String nombre_usuario;
+    private String apellido_usuario;
     private String password;
     private String rol;
 
     public Usuario() {}
 
-    public Usuario(Integer idUsuario, String cedula, String nombre, String apellido, String password, String rol) {
+    public Usuario(Integer idUsuario, String cedula, String nombre_usuario, String apellido_usuario, String password, String rol) {
         this.idUsuario = idUsuario;
         this.cedula = cedula;
-        this.nombre = nombre;
-        this.apellido = apellido;
+        this.nombre_usuario = nombre_usuario;
+        this.apellido_usuario = apellido_usuario;
         this.password = password;
         this.rol = rol;
     }
@@ -36,20 +36,20 @@ public class Usuario {
         this.cedula = cedula;
     }
 
-    public String getNombre() {
-        return nombre;
+    public String getNombre_usuario() {
+        return nombre_usuario;
     }
 
-    public void setNombre(String nombre) {
-        this.nombre = nombre;
+    public void setNombre_usuario(String nombre_usuario) {
+        this.nombre_usuario = nombre_usuario;
     }
 
-    public String getApellido() {
-        return apellido;
+    public String getApellido_usuario() {
+        return apellido_usuario;
     }
 
-    public void setApellido(String apellido) {
-        this.apellido = apellido;
+    public void setApellido_usuario(String apellido_usuario) {
+        this.apellido_usuario = apellido_usuario;
     }
 
     public String getPassword() {
@@ -70,6 +70,6 @@ public class Usuario {
 
     @Override
     public String toString() {
-        return nombre + " " + apellido;
+        return nombre_usuario + " " + apellido_usuario;
     }
 } 

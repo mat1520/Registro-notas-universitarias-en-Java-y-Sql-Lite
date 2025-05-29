@@ -17,10 +17,11 @@ public class ProfesorDAOImpl implements ProfesorDAO {
     
     @Override
     public Profesor create(Profesor profesor) throws Exception {
-        String sql = "INSERT INTO Profesor (id_usuario) VALUES (?)";
+        String sql = "INSERT INTO Profesor (id_usuario, nombre_profesor) VALUES (?, ?)";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             pstmt.setInt(1, profesor.getUsuario().getIdUsuario());
+            pstmt.setString(2, profesor.getNombre_profesor());
             int affectedRows = pstmt.executeUpdate();
             if (affectedRows == 0) {
                 throw new SQLException("Creating profesor failed, no rows affected.");
@@ -31,6 +32,8 @@ public class ProfesorDAOImpl implements ProfesorDAO {
                 } else {
                     throw new SQLException("Creating profesor failed, no ID obtained.");
                 }
+            } catch (SQLException e) {
+                 throw new SQLException("Error retrieving generated key: " + e.getMessage());
             }
             return profesor;
         }
@@ -77,11 +80,12 @@ public class ProfesorDAOImpl implements ProfesorDAO {
     
     @Override
     public Profesor update(Profesor profesor) throws Exception {
-        String sql = "UPDATE Profesor SET id_usuario = ? WHERE id_profesor = ?";
+        String sql = "UPDATE Profesor SET id_usuario = ?, nombre_profesor = ? WHERE id_profesor = ?";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setInt(1, profesor.getUsuario().getIdUsuario());
-            pstmt.setInt(2, profesor.getIdProfesor());
+            pstmt.setString(2, profesor.getNombre_profesor());
+            pstmt.setInt(3, profesor.getIdProfesor());
             int affectedRows = pstmt.executeUpdate();
             if (affectedRows == 0) {
                 throw new SQLException("Updating profesor failed, no rows affected.");
@@ -136,13 +140,14 @@ public class ProfesorDAOImpl implements ProfesorDAO {
         Usuario usuario = new Usuario();
         usuario.setIdUsuario(rs.getInt("id_usuario"));
         usuario.setCedula(rs.getString("cedula"));
-        usuario.setNombre(rs.getString("nombre"));
-        usuario.setApellido(rs.getString("apellido"));
+        usuario.setNombre_usuario(rs.getString("nombre_usuario"));
+        usuario.setApellido_usuario(rs.getString("apellido_usuario"));
         usuario.setPassword(rs.getString("password"));
         usuario.setRol(rs.getString("rol"));
         Profesor profesor = new Profesor();
         profesor.setIdProfesor(rs.getInt("id_profesor"));
         profesor.setUsuario(usuario);
+        profesor.setNombre_profesor(rs.getString("nombre_profesor"));
         return profesor;
     }
 } 

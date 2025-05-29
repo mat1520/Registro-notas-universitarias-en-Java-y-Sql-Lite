@@ -2,13 +2,13 @@ package com.universidad.model;
 
 public class Carrera {
     private Integer idCarrera;
-    private String nombre;
+    private String nombre_carrera;
 
     public Carrera() {}
 
-    public Carrera(Integer idCarrera, String nombre) {
+    public Carrera(Integer idCarrera, String nombre_carrera) {
         this.idCarrera = idCarrera;
-        this.nombre = nombre;
+        this.nombre_carrera = nombre_carrera;
     }
 
     // Getters y Setters
@@ -20,16 +20,16 @@ public class Carrera {
         this.idCarrera = idCarrera;
     }
 
-    public String getNombre() {
-        return nombre;
+    public String getNombre_carrera() {
+        return nombre_carrera;
     }
 
-    public void setNombre(String nombre) {
-        this.nombre = nombre;
+    public void setNombre_carrera(String nombre_carrera) {
+        this.nombre_carrera = nombre_carrera;
     }
 
     @Override
     public String toString() {
-        return nombre;
+        return nombre_carrera;
     }
 } 

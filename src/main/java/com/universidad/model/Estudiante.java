@@ -40,6 +40,6 @@ public class Estudiante {
 
     @Override
     public String toString() {
-        return usuario.getNombre() + " " + usuario.getApellido();
+        return usuario.getNombre_usuario() + " " + usuario.getApellido_usuario();
     }
 } 

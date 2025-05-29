@@ -22,6 +22,6 @@ public class Curso {
 
     @Override
     public String toString() {
-        return materia.getNombre() + " - " + profesor.getUsuario().getNombre();
+        return materia.getNombre_materia() + " - " + profesor.getUsuario().getNombre_usuario();
     }
 } 

@@ -68,8 +68,8 @@ public class LoginController {
                 Usuario usuario = new Usuario();
                 usuario.setIdUsuario(rs.getInt("id_usuario"));
                 usuario.setCedula(rs.getString("cedula"));
-                usuario.setNombre(rs.getString("nombre"));
-                usuario.setApellido(rs.getString("apellido"));
+                usuario.setNombre_usuario(rs.getString("nombre_usuario"));
+                usuario.setApellido_usuario(rs.getString("apellido_usuario"));
                 usuario.setPassword(rs.getString("password"));
                 usuario.setRol(rs.getString("rol"));
                 return usuario;

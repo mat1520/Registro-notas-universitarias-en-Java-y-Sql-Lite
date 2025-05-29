@@ -11,6 +11,12 @@
         <Insets top="32" right="32" bottom="32" left="32"/>
     </padding>
 
+    <ImageView fitHeight="200" fitWidth="200" pickOnBounds="true" preserveRatio="true">
+        <image>
+            <Image url="/images/logo.png" />
+        </image>
+    </ImageView>
+
     <ImageView fitHeight="150" fitWidth="150" preserveRatio="true">
         <image>
             <Image url="file:/C:/Users/Ariel/OneDrive/Desktop/POO-FINAL/Screenshot%202025-05-27%20222519%20(2).png" />

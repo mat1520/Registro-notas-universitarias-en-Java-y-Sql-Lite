@@ -3,6 +3,7 @@ package com.universidad.controller;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -55,7 +56,7 @@ public class ProfesorController implements MainController {
     @Override
     public void setUsuario(Usuario usuario) {
         this.usuario = usuario;
-        welcomeLabel.setText("Bienvenido, " + usuario.getNombre() + " " + usuario.getApellido());
+        welcomeLabel.setText("Bienvenido, " + usuario.getNombre_usuario() + " " + usuario.getApellido_usuario());
         loadCursos();
     }
 
@@ -68,7 +69,7 @@ public class ProfesorController implements MainController {
     }
 
     private void loadCursos() {
-        String sql = "SELECT c.id_curso, m.nombre as materia FROM Curso c " +
+        String sql = "SELECT c.id_curso, m.nombre_materia as materia FROM Curso c " +
                      "JOIN Materia m ON c.id_materia = m.id_materia " +
                      "JOIN Profesor p ON c.id_profesor = p.id_profesor " +
                      "JOIN Usuario u ON p.id_usuario = u.id_usuario " +
@@ -124,16 +125,19 @@ public class ProfesorController implements MainController {
                 idMateria = rs.getInt("id_materia");
                 idCarrera = rs.getInt("id_carrera");
             }
+        } catch (SQLException e) {
+            showError("Database error getting course data: " + e.getMessage());
+            return;
         } catch (Exception e) {
-            showError("Error al obtener datos del curso: " + e.getMessage());
+            showError("Unexpected error getting course data: " + e.getMessage());
             return;
         }
         if (idCarrera == -1) {
-            showError("No se pudo determinar la carrera del curso.");
+            showError("Could not determine the career of the course or course not found.");
             return;
         }
         List<EstudianteItem> estudiantes = new ArrayList<>();
-        String sqlEst = "SELECT e.id_estudiante, u.nombre || ' ' || u.apellido as nombre FROM Estudiante e JOIN Usuario u ON e.id_usuario = u.id_usuario WHERE e.id_carrera = ?";
+        String sqlEst = "SELECT e.id_estudiante, u.nombre_usuario || ' ' || u.apellido_usuario as nombre FROM Estudiante e JOIN Usuario u ON e.id_usuario = u.id_usuario WHERE e.id_carrera = ?";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sqlEst)) {
             pstmt.setInt(1, idCarrera);
@@ -141,12 +145,15 @@ public class ProfesorController implements MainController {
             while (rs.next()) {
                 estudiantes.add(new EstudianteItem(rs.getInt("id_estudiante"), rs.getString("nombre")));
             }
+        } catch (SQLException e) {
+            showError("Database error loading students: " + e.getMessage());
+            return;
         } catch (Exception e) {
-            showError("Error al cargar estudiantes: " + e.getMessage());
+            showError("Unexpected error loading students: " + e.getMessage());
             return;
         }
         if (estudiantes.isEmpty()) {
-            showError("No hay estudiantes en la carrera de este curso.");
+            showError("No students found in the career of this course.");
             return;
         }
         // Diálogo para agregar subnota
@@ -234,6 +241,26 @@ public class ProfesorController implements MainController {
                     showError("No se pudo crear la calificación para el estudiante seleccionado.");
                     return;
                 }
+
+                // Obtener id_parcial basado en el número de parcial seleccionado
+                int idParcial = -1;
+                String sqlParcial = "SELECT id_parcial FROM Parcial WHERE Nombre = ?";
+                try (PreparedStatement pstmtParcial = conn.prepareStatement(sqlParcial)) {
+                    pstmtParcial.setInt(1, input.numeroParcialSeleccionado);
+                    ResultSet rsParcial = pstmtParcial.executeQuery();
+                    if (rsParcial.next()) {
+                        idParcial = rsParcial.getInt("id_parcial");
+                    }
+                } catch (SQLException e) {
+                    showError("Database error getting parcial ID: " + e.getMessage());
+                    return;
+                }
+
+                if (idParcial == -1) {
+                     showError("Could not find the corresponding parcial in the database.");
+                     return;
+                }
+
                 // Validar máximo 10 subnotas
                 SubnotaDAO subnotaDAO = new SubnotaDAOImpl();
                 java.util.List<Subnota> subnotas = subnotaDAO.findByCalificacion(idCalificacion);
@@ -243,15 +270,15 @@ public class ProfesorController implements MainController {
                 }
                 // Validar que no exista ya una subnota con ese número en ese parcial
                 for (Subnota s : subnotas) {
-                    if (s.getParcial().equals(input.parcial) && s.getNumero().equals(input.numero)) {
-                        showError("Ya existe una subnota número " + input.numero + " para el parcial " + input.parcial + ".");
+                    if (s.getIdParcialBaseDatos() == idParcial && s.getNumero() == input.numero) {
+                        showError("Ya existe una subnota número " + input.numero + " para el parcial " + input.numeroParcialSeleccionado + ".");
                         return;
                     }
                 }
                 // Validar suma de subnotas
                 double suma = input.valor;
                 for (Subnota s : subnotas) {
-                    if (s.getParcial().equals(input.parcial)) {
+                    if (s.getIdParcialBaseDatos() == idParcial) { // Compare with id_parcial
                         suma += s.getValor();
                     }
                 }
@@ -260,7 +287,8 @@ public class ProfesorController implements MainController {
                     return;
                 }
                 // Crear subnota
-                Subnota nueva = new Subnota(null, idCalificacion, input.parcial, input.numero, input.valor);
+                // Use the fetched idParcial and the input.numero (subnota number)
+                Subnota nueva = new Subnota(null, idCalificacion, idParcial, input.numero, input.valor);
                 subnotaDAO.create(nueva);
                 showInfo("Subnota agregada correctamente.");
                 // Aquí deberías recargar la tabla de subnotas
@@ -272,18 +300,26 @@ public class ProfesorController implements MainController {
 
     private static class EstudianteItem {
         int id;
-        String nombre;
-        EstudianteItem(int id, String nombre) { this.id = id; this.nombre = nombre; }
-        @Override public String toString() { return nombre; }
+        private String nombre_completo;
+
+        EstudianteItem(int id, String nombre_completo) {
+            this.id = id;
+            this.nombre_completo = nombre_completo;
+        }
+
+        public int getId() { return id; }
+
+        @Override
+        public String toString() { return nombre_completo; }
     }
     private static class SubnotaInput {
         EstudianteItem estudiante;
-        int parcial;
+        int numeroParcialSeleccionado;
         int numero;
         double valor;
-        SubnotaInput(EstudianteItem estudiante, int parcial, int numero, double valor) {
+        SubnotaInput(EstudianteItem estudiante, int numeroParcialSeleccionado, int numero, double valor) {
             this.estudiante = estudiante;
-            this.parcial = parcial;
+            this.numeroParcialSeleccionado = numeroParcialSeleccionado;
             this.numero = numero;
             this.valor = valor;
         }
@@ -333,29 +369,29 @@ public class ProfesorController implements MainController {
             return;
         }
         ObservableList<SubnotaRow> rows = FXCollections.observableArrayList();
-        String sql = "SELECT e.id_estudiante, u.nombre || ' ' || u.apellido as nombre, c.id_calificacion FROM Estudiante e " +
-                "JOIN Usuario u ON e.id_usuario = u.id_usuario " +
-                "JOIN Calificacion c ON c.id_estudiante = e.id_estudiante " +
-                "WHERE c.id_curso = ?";
+        String sql = "SELECT sn.id_subnota, p.Nombre as parcial_nombre, sn.Numero as subnota_numero, sn.valor, sn.id_calificacion, e.id_estudiante, u.nombre_usuario || ' ' || u.apellido_usuario as nombre_completo, sn.id_parcial " +
+                     "FROM Subnota sn " +
+                     "JOIN Calificacion c ON sn.id_calificacion = c.id_calificacion " +
+                     "JOIN Estudiante e ON c.id_estudiante = e.id_estudiante " +
+                     "JOIN Usuario u ON e.id_usuario = u.id_usuario " +
+                     "JOIN Curso cu ON c.id_curso = cu.id_curso " +
+                     "JOIN Parcial p ON sn.id_parcial = p.id_parcial " +
+                     "WHERE cu.id_curso = ?";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setInt(1, selectedCurso.getIdCurso());
             ResultSet rs = pstmt.executeQuery();
-            SubnotaDAO subnotaDAO = new SubnotaDAOImpl();
             while (rs.next()) {
-                int idEst = rs.getInt("id_estudiante");
-                String nombre = rs.getString("nombre");
-                int idCal = rs.getInt("id_calificacion");
-                for (Subnota s : subnotaDAO.findByCalificacion(idCal)) {
-                    rows.add(new SubnotaRow(
-                        s.getIdSubnota(),
-                        idEst,
-                        nombre,
-                        s.getParcial(),
-                        s.getNumero(),
-                        s.getValor()
-                    ));
-                }
+                rows.add(new SubnotaRow(
+                    rs.getInt("id_subnota"),
+                    rs.getInt("id_estudiante"),
+                    rs.getString("nombre_completo"),
+                    rs.getInt("id_parcial"), // Almacena id_parcial
+                    rs.getInt("subnota_numero"), // Almacena número de subnota
+                    rs.getDouble("valor"),
+                    rs.getInt("id_calificacion"),
+                    rs.getString("parcial_nombre") // Almacena nombre del parcial
+                ));
             }
             subnotasTable.setItems(rows);
         } catch (Exception e) {
@@ -364,9 +400,9 @@ public class ProfesorController implements MainController {
     }
 
     private void setupSubnotasTable() {
-        estudianteColumn.setCellValueFactory(new PropertyValueFactory<>("nombre"));
-        parcialColumn.setCellValueFactory(new PropertyValueFactory<>("parcial"));
-        numeroColumn.setCellValueFactory(new PropertyValueFactory<>("numero"));
+        estudianteColumn.setCellValueFactory(new PropertyValueFactory<>("nombre_completo"));
+        parcialColumn.setCellValueFactory(new PropertyValueFactory<>("parcial_nombre")); // Mapear a la propiedad correcta
+        numeroColumn.setCellValueFactory(new PropertyValueFactory<>("numero")); // Mapear a la propiedad correcta para el número de subnota
         valorColumn.setCellValueFactory(new PropertyValueFactory<>("valor"));
         accionesColumn.setCellFactory(param -> new javafx.scene.control.TableCell<>() {
             private final javafx.scene.control.Button editButton = new javafx.scene.control.Button("Editar");
@@ -397,7 +433,7 @@ public class ProfesorController implements MainController {
     private void showEditSubnotaDialog(SubnotaRow row) {
         Dialog<Double> dialog = new Dialog<>();
         dialog.setTitle("Editar Subnota");
-        dialog.setHeaderText("Editar valor de la subnota");
+        dialog.setHeaderText("Editar valor de la subnota para " + row.getNombre_completo() + " (Parcial: " + row.getParcial_nombre() + ", N°: " + row.getNumero() + ")");
         Spinner<Double> valorSpinner = new Spinner<>(0.0, 10.0, row.valor, 0.1);
         valorSpinner.setEditable(true);
         GridPane grid = new GridPane();
@@ -443,15 +479,15 @@ public class ProfesorController implements MainController {
                 }
                 // Validar que no exista ya una subnota con ese número en ese parcial (excepto la actual)
                 for (Subnota s : subnotas) {
-                    if (s.getParcial().equals(row.parcial) && s.getNumero().equals(row.numero) && !s.getIdSubnota().equals(row.idSubnota)) {
-                        showError("Ya existe una subnota número " + row.numero + " para el parcial " + row.parcial + ".");
+                    if (s.getIdParcialBaseDatos() == row.id_parcial_db && s.getNumero() == row.numero && !s.getIdSubnota().equals(row.idSubnota)) {
+                        showError("Ya existe una subnota número " + row.numero + " para el parcial " + row.parcial_nombre + ".");
                         return;
                     }
                 }
                 // Validar suma de subnotas
                 double suma = valorNuevo;
                 for (Subnota s : subnotas) {
-                    if (s.getParcial().equals(row.parcial) && !s.getIdSubnota().equals(row.idSubnota)) {
+                    if (s.getIdParcialBaseDatos() == row.id_parcial_db && !s.getIdSubnota().equals(row.idSubnota)) {
                         suma += s.getValor();
                     }
                 }
@@ -460,7 +496,8 @@ public class ProfesorController implements MainController {
                     return;
                 }
                 // Actualizar subnota
-                Subnota subnota = new Subnota(row.idSubnota, row.idCalificacion, row.parcial, row.numero, valorNuevo);
+                // Usar id_parcial_db almacenado en la fila
+                Subnota subnota = new Subnota(row.idSubnota, row.idCalificacion, row.id_parcial_db, row.numero, valorNuevo);
                 subnotaDAO.update(subnota);
                 showInfo("Subnota actualizada correctamente.");
                 loadSubnotas();
@@ -473,7 +510,7 @@ public class ProfesorController implements MainController {
     private void handleDeleteSubnota(SubnotaRow row) {
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
         alert.setTitle("Eliminar Subnota");
-        alert.setHeaderText("¿Está seguro de eliminar esta subnota?");
+        alert.setHeaderText("¿Está seguro de eliminar la subnota para " + row.getNombre_completo() + " (Parcial: " + row.getParcial_nombre() + ", N°: " + row.getNumero() + ")?");
         alert.setContentText("Esta acción no se puede deshacer.");
         Optional<ButtonType> result = alert.showAndWait();
         if (result.isPresent() && result.get() == ButtonType.OK) {
@@ -491,27 +528,36 @@ public class ProfesorController implements MainController {
     public static class SubnotaRow {
         int idSubnota;
         int idEstudiante;
-        String nombre;
-        int parcial;
-        int numero;
+        String nombre_completo;
+        int id_parcial_db; // Renombrar para mayor claridad (almacena id_parcial de la base de datos)
+        int numero; // Este campo almacenará el número de subnota (1-10) de la base de datos (columna Numero)
         double valor;
         int idCalificacion;
-        public SubnotaRow(int idSubnota, int idEstudiante, String nombre, int parcial, int numero, double valor) {
+        String parcial_nombre; // Campo para el nombre del parcial (de la columna Nombre en Parcial)
+
+        public SubnotaRow(int idSubnota, int idEstudiante, String nombre_completo, int id_parcial_db, int numero, double valor, int idCalificacion, String parcial_nombre) {
             this.idSubnota = idSubnota;
             this.idEstudiante = idEstudiante;
-            this.nombre = nombre;
-            this.parcial = parcial;
-            this.numero = numero;
+            this.nombre_completo = nombre_completo;
+            this.id_parcial_db = id_parcial_db; // Almacena id_parcial
+            this.numero = numero; // Almacena número de subnota
             this.valor = valor;
+            this.idCalificacion = idCalificacion;
+            this.parcial_nombre = parcial_nombre; // Almacena nombre del parcial
         }
-        public String getNombre() { return nombre; }
-        public int getParcial() { return parcial; }
-        public int getNumero() { return numero; }
+
+        public int getIdSubnota() { return idSubnota; }
+        public int getIdEstudiante() { return idEstudiante; }
+        public String getNombre_completo() { return nombre_completo; }
+        public int getId_parcial_db() { return id_parcial_db; } // Nuevo getter para id_parcial de la base de datos
+        public int getNumero() { return numero; } // Devuelve número de subnota
         public double getValor() { return valor; }
+        public int getIdCalificacion() { return idCalificacion; }
+        public String getParcial_nombre() { return parcial_nombre; } // Getter para nombre del parcial
     }
 
     @FXML
     private void handleActualizarSubnotas() {
-        loadSubnotas();
+        loadSubnotas(); // Recargar la tabla después de actualizar
     }
 } 

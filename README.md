@@ -1,4 +1,4 @@
-# Sistema de Gestión de Notas UTIA
+# Sistema de Gestión de Notas Universitarias
 
 ## Descripción
 Sistema universitario para la gestión de notas, usuarios, materias y carreras. Incluye roles de Administrador, Profesor y Estudiante. Interfaz moderna, validaciones robustas y sincronización automática de datos.
@@ -38,7 +38,7 @@ Sistema universitario para la gestión de notas, usuarios, materias y carreras. 
   - Nombres y cédulas generados, contraseñas seguras
 - **1 Administrador:**
   - Cédula: `1754198487`
-  - Contraseña: `ADMIN`
+  - Contraseña: `UIDE.ASU.123`
 - **Materias y cursos** distribuidos entre carreras y profesores
 
 ---
@@ -47,7 +47,7 @@ Sistema universitario para la gestión de notas, usuarios, materias y carreras. 
 
 ### Administrador
 - **Cédula:** `1754198487`
-- **Contraseña:** `ADMIN`
+- **Contraseña:** `UIDE.ASU.123`
 
 ### Profesores
 - **Cédulas:** `1750000001` a `1750000010`
@@ -84,9 +84,62 @@ Sistema universitario para la gestión de notas, usuarios, materias y carreras. 
 
 ## 👨‍💻 Autores y Créditos
 - Proyecto UTIA – Universidad Tecnológica de Inteligencia Artificial
-- Desarrollado por:  Ariel Melo , Mateo Yánez, Maria Chango
+- Desarrollado por: Ariel Melo, Mateo Yánez, Maria Chango
 
----
+## 📝 Cómo Funciona
+El sistema de gestión de notas universitarias está diseñado para facilitar la administración de notas, usuarios, materias y carreras. Utiliza JavaFX para la interfaz gráfica y SQLite para el almacenamiento de datos, siguiendo el patrón MVC (Modelo-Vista-Controlador).
+
+### Características Principales
+- **Gestión de Usuarios**: Administración de roles (Administrador, Profesor, Estudiante) con validaciones de contraseñas y permisos.
+- **Gestión de Materias y Carreras**: Creación, edición y eliminación de materias y carreras, con validaciones para evitar conflictos.
+- **Gestión de Notas**: Registro y consulta de notas por parte de profesores y estudiantes.
+- **Interfaz Adaptativa**: Diseño responsivo que se adapta a diferentes tamaños de pantalla.
+
+### Tecnologías Utilizadas
+- **JavaFX**: Para la interfaz de usuario.
+- **SQLite**: Para el almacenamiento de datos.
+- **Maven**: Para la gestión de dependencias y compilación del proyecto.
+
+### Patrones de Diseño
+- **MVC**: Separación clara entre la lógica de negocio, la interfaz de usuario y el control de datos.
+- **DAO**: Acceso a datos a través de objetos de acceso a datos, facilitando la interacción con la base de datos.
+
+### Validaciones y Reglas de Negocio
+- Las contraseñas deben tener al menos 12 caracteres.
+- No se pueden eliminar carreras con estudiantes o materias asociadas.
+- Se realizan validaciones de cédula y campos obligatorios.
+
+### Instalación y Uso
+1. Clona el repositorio.
+2. Configura la base de datos SQLite con el script de ejemplo si es necesario.
+3. Ejecuta la aplicación con JavaFX.
+
+Para más detalles, consulta la documentación técnica incluida en el proyecto.
 
 ¿Dudas o sugerencias? ¡Contáctanos! 
 arielmelo1520@hotmail.com
+
+## Credenciales de acceso
+
+- **Administrador**
+  - Usuario: `1754198487`
+  - Contraseña: `UIDE.ASU.123`
+
+- **Estudiantes y Profesores**
+  - Usuario: Cédula del usuario
+  - Contraseña: Cédula del usuario
+
+(Recuerda que puedes cambiar las contraseñas desde la aplicación si tienes permisos de administrador.)
+
+## Instalación y uso
+
+1. Clona el repositorio
+2. Configura la base de datos SQLite con el script de ejemplo si es necesario
+3. Ejecuta la aplicación con JavaFX
+
+## Estructura principal
+- JavaFX + SQLite
+- Patrón MVC
+- Usuarios: Admin, Profesor, Estudiante
+
+Para más detalles, consulta la documentación técnica incluida en el proyecto.

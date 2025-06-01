@@ -305,8 +305,8 @@ public class AdminController implements MainController {
                     showError("El apellido solo puede contener letras y espacios.");
                     return null;
                 }
-                if (password != null && !password.isEmpty() && password.length() < 6) {
-                    showError("La contraseña debe tener al menos 6 caracteres.");
+                if (password != null && !password.isEmpty() && password.length() < 12) {
+                    showError("La contraseña debe tener al menos 12 caracteres.");
                     return null;
                 }
                 if ("ESTUDIANTE".equals(rol) && carrera == null) {
@@ -417,7 +417,7 @@ public class AdminController implements MainController {
             }
 
             conn.commit(); // Commit the transaction
-            showSuccess("Usuario agregado correctamente.");
+            showInfo("Usuario agregado correctamente.");
             refreshTable();
 
         } catch (SQLException e) {
@@ -678,8 +678,8 @@ public class AdminController implements MainController {
                     showError("El apellido solo puede contener letras y espacios.");
                     return null;
                 }
-                if (!password.isEmpty() && password.length() < 6) {
-                    showError("La contraseña debe tener al menos 6 caracteres.");
+                if (!password.isEmpty() && password.length() < 12) {
+                    showError("La contraseña debe tener al menos 12 caracteres.");
                     return null;
                 }
                 // Validar unicidad de cédula (excluyendo el usuario actual)
@@ -837,19 +837,47 @@ public class AdminController implements MainController {
     }
     
     private void deleteUsuario(UsuarioRow row) {
-        String sql = "DELETE FROM Usuario WHERE id_usuario = ?";
-        
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            
-            pstmt.setInt(1, row.getId());
-            pstmt.executeUpdate();
-            
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            conn.setAutoCommit(false);
+            // Si es estudiante, eliminar subnotas, calificaciones y registro de estudiante
+            if ("ESTUDIANTE".equals(row.getRol())) {
+                // Obtener id_estudiante
+                int idEstudiante = -1;
+                try (PreparedStatement pstmt = conn.prepareStatement("SELECT id_estudiante FROM Estudiante WHERE id_usuario = ?")) {
+                    pstmt.setInt(1, row.getId());
+                    ResultSet rs = pstmt.executeQuery();
+                    if (rs.next()) {
+                        idEstudiante = rs.getInt(1);
+                    }
+                }
+                if (idEstudiante != -1) {
+                    // Eliminar subnotas
+                    try (PreparedStatement pstmt = conn.prepareStatement("DELETE FROM Subnota WHERE id_calificacion IN (SELECT id_calificacion FROM Calificacion WHERE id_estudiante = ? )")) {
+                        pstmt.setInt(1, idEstudiante);
+                        pstmt.executeUpdate();
+                    }
+                    // Eliminar calificaciones
+                    try (PreparedStatement pstmt = conn.prepareStatement("DELETE FROM Calificacion WHERE id_estudiante = ?")) {
+                        pstmt.setInt(1, idEstudiante);
+                        pstmt.executeUpdate();
+                    }
+                    // Eliminar estudiante
+                    try (PreparedStatement pstmt = conn.prepareStatement("DELETE FROM Estudiante WHERE id_estudiante = ?")) {
+                        pstmt.setInt(1, idEstudiante);
+                        pstmt.executeUpdate();
+                    }
+                }
+            }
+            // Eliminar usuario (siempre)
+            try (PreparedStatement pstmt = conn.prepareStatement("DELETE FROM Usuario WHERE id_usuario = ?")) {
+                pstmt.setInt(1, row.getId());
+                pstmt.executeUpdate();
+            }
+            conn.commit();
             // Actualizar la tabla
             usuariosTable.getItems().remove(row);
-            
         } catch (Exception e) {
-            showError("Error al eliminar usuario: " + e.getMessage());
+            showError("Error al eliminar usuario y datos relacionados: " + e.getMessage());
         }
     }
 
@@ -1254,23 +1282,6 @@ public class AdminController implements MainController {
             showError("Por favor seleccione una materia para eliminar.");
             return;
         }
-        // Validar que no tenga cursos asociados
-        String sqlCheck = "SELECT COUNT(*) FROM Curso WHERE id_materia = ?";
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sqlCheck)) {
-            pstmt.setInt(1, selected.getId());
-            ResultSet rs = pstmt.executeQuery();
-            if (rs.next() && rs.getInt(1) > 0) {
-                showError("No se puede eliminar la materia porque tiene cursos asociados.");
-                return;
-            }
-        } catch (SQLException e) {
-            showError("Error al validar materia: " + e.getMessage());
-            return;
-        } catch (Exception e) {
-            showError("Error inesperado al validar materia: " + e.getMessage());
-            return;
-        }
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
         alert.setTitle("Confirmar eliminación");
         alert.setHeaderText("¿Está seguro de eliminar la materia seleccionada?");
@@ -1521,40 +1532,42 @@ public class AdminController implements MainController {
             showError("Por favor seleccione una carrera para eliminar.");
             return;
         }
-        // Validar que no tenga materias asociadas
-        String sqlCheckMaterias = "SELECT COUNT(*) FROM Materia WHERE id_carrera = ?";
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sqlCheckMaterias)) {
-            pstmt.setInt(1, selected.getId());
-            ResultSet rs = pstmt.executeQuery();
-            if (rs.next() && rs.getInt(1) > 0) {
-                showError("No se puede eliminar la carrera porque tiene materias asociadas.");
-                return;
+        int countEstudiantes = 0;
+        int countMaterias = 0;
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            // Contar estudiantes asociados
+            try (PreparedStatement pstmt = conn.prepareStatement("SELECT COUNT(*) FROM Estudiante WHERE id_carrera = ?")) {
+                pstmt.setInt(1, selected.getId());
+                ResultSet rs = pstmt.executeQuery();
+                if (rs.next()) {
+                    countEstudiantes = rs.getInt(1);
+                }
+            }
+            // Contar materias asociadas
+            try (PreparedStatement pstmt = conn.prepareStatement("SELECT COUNT(*) FROM Materia WHERE id_carrera = ?")) {
+                pstmt.setInt(1, selected.getId());
+                ResultSet rs = pstmt.executeQuery();
+                if (rs.next()) {
+                    countMaterias = rs.getInt(1);
+                }
             }
         } catch (SQLException e) {
-            showError("Error al validar carrera: " + e.getMessage());
+            showError("Error al validar asociaciones: " + e.getMessage());
             return;
         } catch (Exception e) {
-            showError("Error inesperado al validar carrera: " + e.getMessage());
+            showError("Error inesperado al validar asociaciones: " + e.getMessage());
             return;
         }
-        // Check for associated students
-        String sqlCheckEst = "SELECT COUNT(*) FROM Estudiante WHERE id_carrera = ?";
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sqlCheckEst)) {
-            pstmt.setInt(1, selected.getId());
-            ResultSet rs = pstmt.executeQuery();
-            if (rs.next() && rs.getInt(1) > 0) {
-                showError("No se puede eliminar la carrera porque tiene estudiantes asociados.");
-                return;
-            }
-        } catch (SQLException e) {
-            showError("Error al validar carrera: " + e.getMessage());
-            return;
-        } catch (Exception e) {
-            showError("Error inesperado al validar carrera: " + e.getMessage());
+        if (countEstudiantes > 0 || countMaterias > 0) {
+            String msg = "No se puede eliminar la carrera porque tiene: ";
+            if (countEstudiantes > 0) msg += countEstudiantes + " estudiante(s) asociado(s)";
+            if (countEstudiantes > 0 && countMaterias > 0) msg += " y ";
+            if (countMaterias > 0) msg += countMaterias + " materia(s) asociada(s)";
+            msg += ".";
+            showError(msg);
             return;
         }
+        // Eliminar la carrera si no hay asociaciones
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
         alert.setTitle("Confirmar eliminación");
         alert.setHeaderText("¿Está seguro de eliminar la carrera seleccionada?");

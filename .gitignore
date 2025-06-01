@@ -1,0 +1,8 @@
+# Archivos y carpetas a ignorar
+/target/
+/.vscode/
+*.log
+*.tmp
+datos.sql
+database.sql
+# ¡NO ignorar universidad.db! 

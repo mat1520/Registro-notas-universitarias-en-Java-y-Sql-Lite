@@ -95,7 +95,6 @@ flowchart TD
     C --> G
 ```
 
-> Puedes reemplazar este diagrama por una imagen más detallada si lo deseas.
 
 ---
 

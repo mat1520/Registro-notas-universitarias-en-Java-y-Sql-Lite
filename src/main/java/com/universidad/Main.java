@@ -16,7 +16,8 @@ public class Main extends Application {
         DatabaseInitializer.initialize();
         
         // Cargar la ventana de login
-        FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/Login.fxml"));
+        FXMLLoader loader = new FXMLLoader();
+        loader.setLocation(Main.class.getResource("/fxml/Login.fxml"));
         Parent root = loader.load();
         
         primaryStage.setTitle("Gestión de Notas - Login");

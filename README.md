@@ -1,4 +1,20 @@
+![Logo UTIA](src/main/resources/images/logo.png)
+
 # Sistema de Gestión de Notas Universitarias
+
+## Índice
+1. [Descripción](#descripción)
+2. [Instalación y Primeros Pasos](#instalación-y-primeros-pasos)
+3. [Datos de Ejemplo Incluidos](#datos-de-ejemplo-incluidos)
+4. [Credenciales de Ejemplo](#credenciales-de-ejemplo-actualizadas)
+5. [Manual de Usuario](#manual-de-usuario)
+6. [Diagramas y Flujos](#diagramas-y-flujos)
+7. [Uso Rápido](#uso-rápido)
+8. [Notas Técnicas](#notas-técnicas)
+9. [Estructura de la Base de Datos](#estructura-de-la-base-de-datos)
+10. [Autores y Créditos](#autores-y-créditos)
+
+---
 
 ## Descripción
 Sistema universitario para la gestión de notas, usuarios, materias y carreras. Incluye roles de Administrador, Profesor y Estudiante. Interfaz moderna, validaciones robustas y sincronización automática de datos.
@@ -12,14 +28,9 @@ Sistema universitario para la gestión de notas, usuarios, materias y carreras. 
    git clone https://github.com/mat1520/Registro-notas-universitarias-en-Java-y-Sql-Lite
    cd POO-FINAL
    ```
-2. **Restaura la base de datos de ejemplo:**
-   - Asegúrate de tener SQLite instalado.
-   - Ejecuta el script `init.sql`:
-     ```bash
-     sqlite3 universidad.db < src/main/resources/sql/init.sql
-     ```
-   - O usa tu gestor SQLite favorito para importar el archivo.
-
+2. **Base de datos:**
+   - El archivo `universidad.db` ya está incluido y listo para usar.
+   - No es necesario ejecutar scripts de inicialización.
 3. **Compila y ejecuta:**
    ```bash
    mvnd javafx:run
@@ -28,37 +39,63 @@ Sistema universitario para la gestión de notas, usuarios, materias y carreras. 
 ---
 
 ## 🗃️ Datos de Ejemplo Incluidos
-- **3 Carreras:**
+- **Carreras disponibles:**
   - Ingeniería en Sistemas
   - Ingeniería Mecatrónica
   - Ingeniería Civil
-- **30 Estudiantes:**
-  - Creados con cédulas y nombres reales (ver sección de credenciales)
-- **10 Profesores:**
-  - Nombres y cédulas generados, contraseñas seguras
-- **1 Administrador:**
-  - Cédula: `1754198487`
-  - Contraseña: `UIDE.ASU.123`
+  - (Ver aplicación para lista actualizada)
+- **Estudiantes, Profesores y Administradores:**
+  - Credenciales actualizadas (ver tabla de ejemplo abajo)
+  - Contraseñas seguras y únicas para cada usuario
 - **Materias y cursos** distribuidos entre carreras y profesores
 
 ---
 
-## 🔑 Credenciales de Ejemplo
+## 🔑 Credenciales de Ejemplo (Actualizadas)
 
-### Administrador
-- **Cédula:** `1754198487`
-- **Contraseña:** `UIDE.ASU.123`
+| Cédula      | Nombre                | Apellido     | Contraseña                | Rol         |
+|-------------|-----------------------|--------------|---------------------------|-------------|
+| 1752202323  | Gabriela              | Sánchez      | Yx#2K!pm94$@WrLv          | ESTUDIANTE  |
+| 1722580873  | Samuel                | Vargas       | Zp@!7WL^X9Kqmr38          | ESTUDIANTE  |
+| 1754206744  | Óscar                 | Rodríguez    | K!LpM9g@WzX7r38r          | ADMIN       |
+| 1725098373  | Ronnie                | Martínez     | 9m@L!pK9^WzX6gR83         | PROFESOR    |
+| 1725098320  | Mauricio              | Rios         | MqLpK^WzX6gR83            | PROFESOR    |
+| 1727291823  | Marcela               | Venegas      | pZ7K^LqM@!WzX7gR83        | PROFESOR    |
+| ...         | ...                   | ...          | ...                       | ...         |
 
-### Profesores
-- **Cédulas:** `1750000001` a `1750000010`
-- **Contraseñas:** `P@ssw0rd1!`, `P@ssw0rd2!`, ...
+> **Nota:** Consulta las imágenes o la base de datos para la lista completa de credenciales.
 
-### Estudiantes
-- **Cédulas y nombres:**
-  - `1753797065` – Engelees Gregori Alvarado Arbiza – `S3guro1!`
-  - `1725080327` – Kamilah Domenica Arcentales Egas – `S3guro2!`
-  - ...
-  - (Ver `init.sql` para la lista completa de estudiantes y contraseñas)
+---
+
+## 📘 Manual de Usuario
+
+Ya está disponible el **Manual de Usuario** para el sistema. Puedes consultarlo en el archivo:
+
+- `Manual de Usuario UTIA SISTEMA DE CALIFICACIONES.pdf` (ubicado en la raíz del proyecto)
+
+Este manual contiene instrucciones detalladas para el uso de todas las funcionalidades del sistema, tanto para administradores, profesores como estudiantes.
+
+---
+
+## 📊 Diagramas y Flujos
+
+### Diagrama de Flujo General del Sistema
+
+```mermaid
+flowchart TD
+    A[Inicio] --> B[Login]
+    B -->|Admin| C[Gestión de Usuarios]
+    B -->|Profesor| D[Gestión de Notas]
+    B -->|Estudiante| E[Consulta de Notas]
+    C --> F[Gestión de Carreras/Materias]
+    D --> E
+    F --> G[Salir]
+    E --> G
+    D --> G
+    C --> G
+```
+
+> Puedes reemplazar este diagrama por una imagen más detallada si lo deseas.
 
 ---
 
@@ -78,13 +115,17 @@ Sistema universitario para la gestión de notas, usuarios, materias y carreras. 
 ---
 
 ## 📂 Estructura de la Base de Datos
-- Ver `src/main/resources/sql/init.sql` para la estructura y datos de ejemplo.
+- El archivo `universidad.db` contiene toda la información necesaria.
+- No es necesario ejecutar scripts adicionales.
 
 ---
 
 ## 👨‍💻 Autores y Créditos
 - Proyecto UTIA – Universidad Tecnológica de Inteligencia Artificial
 - Desarrollado por: Ariel Melo, Mateo Yánez, Maria Chango
+
+¿Dudas o sugerencias? ¡Contáctanos! 
+arielmelo1520@hotmail.com
 
 ## 📝 Cómo Funciona
 El sistema de gestión de notas universitarias está diseñado para facilitar la administración de notas, usuarios, materias y carreras. Utiliza JavaFX para la interfaz gráfica y SQLite para el almacenamiento de datos, siguiendo el patrón MVC (Modelo-Vista-Controlador).
@@ -119,15 +160,6 @@ Para más detalles, consulta la documentación técnica incluida en el proyecto.
 ¿Dudas o sugerencias? ¡Contáctanos! 
 arielmelo1520@hotmail.com
 
-## Credenciales de acceso
-
-- **Administrador**
-  - Usuario: `1754198487`
-  - Contraseña: `UIDE.ASU.123`
-
-- **Estudiantes y Profesores**
-  - Usuario: Cédula del usuario
-  - Contraseña: Cédula del usuario
 
 (Recuerda que puedes cambiar las contraseñas desde la aplicación si tienes permisos de administrador.)
 
@@ -141,5 +173,3 @@ arielmelo1520@hotmail.com
 - JavaFX + SQLite
 - Patrón MVC
 - Usuarios: Admin, Profesor, Estudiante
-
-Para más detalles, consulta la documentación técnica incluida en el proyecto.

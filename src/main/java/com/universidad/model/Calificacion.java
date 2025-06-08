@@ -3,20 +3,20 @@ package com.universidad.model;
 public class Calificacion {
     private Integer idCalificacion;
     private Estudiante estudiante;
-    private Curso curso;
+    private Materia materia;
 
     public Calificacion() {}
 
-    public Calificacion(Integer idCalificacion, Estudiante estudiante, Curso curso) {
+    public Calificacion(Integer idCalificacion, Estudiante estudiante, Materia materia) {
         this.idCalificacion = idCalificacion;
         this.estudiante = estudiante;
-        this.curso = curso;
+        this.materia = materia;
     }
 
     public Integer getIdCalificacion() { return idCalificacion; }
     public void setIdCalificacion(Integer idCalificacion) { this.idCalificacion = idCalificacion; }
     public Estudiante getEstudiante() { return estudiante; }
     public void setEstudiante(Estudiante estudiante) { this.estudiante = estudiante; }
-    public Curso getCurso() { return curso; }
-    public void setCurso(Curso curso) { this.curso = curso; }
+    public Materia getMateria() { return materia; }
+    public void setMateria(Materia materia) { this.materia = materia; }
 } 

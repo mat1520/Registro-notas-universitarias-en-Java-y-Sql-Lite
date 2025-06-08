@@ -3,14 +3,12 @@ package com.universidad.model;
 public class Estudiante {
     private Integer idEstudiante;
     private Usuario usuario;
-    private Carrera carrera;
 
     public Estudiante() {}
 
-    public Estudiante(Integer idEstudiante, Usuario usuario, Carrera carrera) {
+    public Estudiante(Integer idEstudiante, Usuario usuario) {
         this.idEstudiante = idEstudiante;
         this.usuario = usuario;
-        this.carrera = carrera;
     }
 
     // Getters y Setters
@@ -28,14 +26,6 @@ public class Estudiante {
 
     public void setUsuario(Usuario usuario) {
         this.usuario = usuario;
-    }
-
-    public Carrera getCarrera() {
-        return carrera;
-    }
-
-    public void setCarrera(Carrera carrera) {
-        this.carrera = carrera;
     }
 
     @Override

@@ -1,7 +1,5 @@
 package com.universidad;
 
-import com.universidad.util.DatabaseInitializer;
-
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -12,9 +10,6 @@ public class Main extends Application {
     
     @Override
     public void start(Stage primaryStage) throws Exception {
-        // Inicializar la base de datos
-        DatabaseInitializer.initialize();
-        
         // Cargar la ventana de login
         FXMLLoader loader = new FXMLLoader();
         loader.setLocation(Main.class.getResource("/fxml/Login.fxml"));

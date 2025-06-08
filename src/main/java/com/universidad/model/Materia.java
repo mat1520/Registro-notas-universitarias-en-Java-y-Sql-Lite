@@ -3,14 +3,12 @@ package com.universidad.model;
 public class Materia {
     private Integer idMateria;
     private String nombre_materia;
-    private Carrera carrera;
 
     public Materia() {}
 
-    public Materia(Integer idMateria, String nombre_materia, Carrera carrera) {
+    public Materia(Integer idMateria, String nombre_materia) {
         this.idMateria = idMateria;
         this.nombre_materia = nombre_materia;
-        this.carrera = carrera;
     }
 
     // Getters y Setters
@@ -28,14 +26,6 @@ public class Materia {
 
     public void setNombre_materia(String nombre_materia) {
         this.nombre_materia = nombre_materia;
-    }
-
-    public Carrera getCarrera() {
-        return carrera;
-    }
-
-    public void setCarrera(Carrera carrera) {
-        this.carrera = carrera;
     }
 
     @Override

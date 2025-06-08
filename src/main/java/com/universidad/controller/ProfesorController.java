@@ -201,9 +201,9 @@ public class ProfesorController implements MainController {
                 // Obtener id_calificacion
                 int idCalificacion = -1;
                 try (PreparedStatement pstmt = conn.prepareStatement(
-                        "SELECT id_calificacion FROM Calificacion WHERE id_estudiante = ? AND id_materia = ?")) {
+                        "SELECT id_calificacion FROM Calificacion WHERE id_estudiante = ? AND id_curso = ?")) {
                     pstmt.setInt(1, input.estudiante.getId());
-                    pstmt.setInt(2, idMateria);
+                    pstmt.setInt(2, selectedCurso.getIdCurso());
                     ResultSet rs = pstmt.executeQuery();
                     if (rs.next()) {
                         idCalificacion = rs.getInt("id_calificacion");
@@ -321,17 +321,6 @@ public class ProfesorController implements MainController {
         }
         public int getIdCurso() { return idCurso; }
         @Override public String toString() { return nombre; }
-    }
-
-    public static class EstudianteNotaRow {
-        private final String nombre;
-        private final Double nota;
-        public EstudianteNotaRow(String nombre, Double nota) {
-            this.nombre = nombre;
-            this.nota = nota;
-        }
-        public String getNombre() { return nombre; }
-        public Double getNota() { return nota; }
     }
 
     private void loadSubnotas() {

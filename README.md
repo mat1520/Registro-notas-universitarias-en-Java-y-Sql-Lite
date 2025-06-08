@@ -23,6 +23,11 @@ Sistema universitario para la gestión de notas, usuarios, materias y carreras. 
 
 ## 🚀 Instalación y Primeros Pasos
 
+### Requisitos Previos
+- Java 17 o superior (requerido por la configuración de Maven)
+- Maven para la gestión de dependencias
+
+### Pasos de Instalación
 1. **Clona el repositorio:**
    ```bash
    git clone https://github.com/mat1520/Registro-notas-universitarias-en-Java-y-Sql-Lite
@@ -74,6 +79,8 @@ Ya está disponible el **Manual de Usuario** para el sistema. Puedes consultarlo
 - `Manual de Usuario UTIA SISTEMA DE CALIFICACIONES.pdf` (ubicado en la raíz del proyecto)
 
 Este manual contiene instrucciones detalladas para el uso de todas las funcionalidades del sistema, tanto para administradores, profesores como estudiantes.
+
+> **Nota Importante:** El manual de usuario contiene capturas de pantalla con datos de ejemplo (usuarios, notas, etc.) que pueden no estar actualizados. Para obtener las credenciales y datos más recientes, por favor consulta la sección "Credenciales de Ejemplo" de este README o directamente la base de datos universidad.db.
 
 ---
 
@@ -149,24 +156,7 @@ El sistema de gestión de notas universitarias está diseñado para facilitar la
 - No se pueden eliminar carreras con estudiantes o materias asociadas.
 - Se realizan validaciones de cédula y campos obligatorios.
 
-### Instalación y Uso
-1. Clona el repositorio.
-2. Configura la base de datos SQLite con el script de ejemplo si es necesario.
-3. Ejecuta la aplicación con JavaFX.
-
-Para más detalles, consulta la documentación técnica incluida en el proyecto.
-
-¿Dudas o sugerencias? ¡Contáctanos! 
-arielmelo1520@hotmail.com
-
-
 (Recuerda que puedes cambiar las contraseñas desde la aplicación si tienes permisos de administrador.)
-
-## Instalación y uso
-
-1. Clona el repositorio
-2. Configura la base de datos SQLite con el script de ejemplo si es necesario
-3. Ejecuta la aplicación con JavaFX
 
 ## Estructura principal
 - JavaFX + SQLite

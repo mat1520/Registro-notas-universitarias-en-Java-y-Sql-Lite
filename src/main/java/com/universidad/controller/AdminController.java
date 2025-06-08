@@ -70,27 +70,6 @@ public class AdminController implements MainController {
     private Button agregarUsuarioButton;
     
     @FXML
-    private TextField cedulaField;
-
-    @FXML
-    private TextField nombreField;
-
-    @FXML
-    private TextField apellidoField;
-
-    @FXML
-    private PasswordField passwordField;
-
-    @FXML
-    private ComboBox<String> rolCombo;
-
-    @FXML
-    private ComboBox<CarreraItem> carreraCombo;
-
-    @FXML
-    private ListView<MateriaItem> materiasList;
-    
-    @FXML
     private TableView<MateriaRow> materiasTable;
     
     @FXML
@@ -123,7 +102,7 @@ public class AdminController implements MainController {
     public void setUsuario(Usuario usuario) {
         this.usuario = usuario;
         welcomeLabel.setText("Bienvenido, " + usuario.getNombre_usuario() + " " + usuario.getApellido_usuario());
-        loadUsuarios();
+        refreshTable();
     }
     
     @FXML
@@ -149,10 +128,6 @@ public class AdminController implements MainController {
             nombreCarreraColumn.setCellValueFactory(new PropertyValueFactory<>("nombre_carrera"));
             refreshCarrerasTable();
         }
-    }
-    
-    private void loadUsuarios() {
-        refreshTable();
     }
     
     @FXML
@@ -699,22 +674,6 @@ public class AdminController implements MainController {
         }
     }
 
-    // Validación de cédula ecuatoriana
-    private boolean validarCedulaEcuatoriana(String cedula) {
-        if (cedula == null || cedula.length() != 10) return false;
-        int provincia = Integer.parseInt(cedula.substring(0, 2));
-        if (provincia < 1 || provincia > 24) return false;
-        int[] coef = {2,1,2,1,2,1,2,1,2};
-        int suma = 0;
-        for (int i = 0; i < 9; i++) {
-            int val = Character.getNumericValue(cedula.charAt(i)) * coef[i];
-            if (val > 9) val -= 9;
-            suma += val;
-        }
-        int digitoVerificador = (10 - (suma % 10)) % 10;
-        return digitoVerificador == Character.getNumericValue(cedula.charAt(9));
-    }
-
     // Clases auxiliares para el formulario
     public static class CarreraItem {
         private int id;
@@ -812,46 +771,20 @@ public class AdminController implements MainController {
         private String nombre_usuario;
         private String apellido_usuario;
         private String rol;
-        private String carrera;
-        private String materias;
 
-        public UsuarioRow(int id, String cedula, String nombre_usuario, String apellido_usuario, String rol, String carrera, String materias) {
+        public UsuarioRow(int id, String cedula, String nombre_usuario, String apellido_usuario, String rol) {
             this.id = id;
             this.cedula = cedula;
             this.nombre_usuario = nombre_usuario;
             this.apellido_usuario = apellido_usuario;
             this.rol = rol;
-            this.carrera = carrera;
-            this.materias = materias;
         }
 
-        public int getId() {
-            return id;
-        }
-
-        public String getCedula() {
-            return cedula;
-        }
-
-        public String getNombre_usuario() {
-            return nombre_usuario;
-        }
-
-        public String getApellido_usuario() {
-            return apellido_usuario;
-        }
-
-        public String getRol() {
-            return rol;
-        }
-
-        public String getCarrera() {
-            return carrera;
-        }
-
-        public String getMaterias() {
-            return materias;
-        }
+        public int getId() { return id; }
+        public String getCedula() { return cedula; }
+        public String getNombre_usuario() { return nombre_usuario; }
+        public String getApellido_usuario() { return apellido_usuario; }
+        public String getRol() { return rol; }
     }
 
     // Método para generar contraseña segura
@@ -1120,8 +1053,6 @@ public class AdminController implements MainController {
             refreshMateriasTable();
         } catch (SQLException e) {
             showError("Error al eliminar materia: " + e.getMessage());
-        } catch (Exception e) {
-            showError("Error inesperado al eliminar materia: " + e.getMessage());
         }
     }
 
@@ -1397,17 +1328,14 @@ public class AdminController implements MainController {
     }
 
     private void eliminarCarrera(int idCarrera) {
-        String sql = "DELETE FROM Carrera WHERE id_carrera = ?";
         try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+             PreparedStatement pstmt = conn.prepareStatement("DELETE FROM Carrera WHERE id_carrera = ?")) {
             pstmt.setInt(1, idCarrera);
             pstmt.executeUpdate();
-            showSuccess("Carrera eliminada correctamente.");
             refreshCarrerasTable();
+            showSuccess("Carrera eliminada exitosamente.");
         } catch (SQLException e) {
             showError("Error al eliminar carrera: " + e.getMessage());
-        } catch (Exception e) {
-            showError("Error inesperado al eliminar carrera: " + e.getMessage());
         }
     }
 
@@ -1416,7 +1344,8 @@ public class AdminController implements MainController {
         private int id;
         private String nombre_carrera;
         public CarreraRow(int id, String nombre_carrera) {
-            this.id = id; this.nombre_carrera = nombre_carrera;
+            this.id = id;
+            this.nombre_carrera = nombre_carrera;
         }
         public int getId() { return id; }
         public String getNombre_carrera() { return nombre_carrera; }
@@ -1424,101 +1353,51 @@ public class AdminController implements MainController {
 
     public static class CarreraInput {
         private final String nombre_carrera;
-        private final FacultadItem facultad; // Añadir campo facultad
-
-        public CarreraInput(String nombre_carrera, FacultadItem facultad) { // Constructor con facultad
+        private final FacultadItem facultad;
+        
+        public CarreraInput(String nombre_carrera, FacultadItem facultad) {
             this.nombre_carrera = nombre_carrera;
             this.facultad = facultad;
         }
-
+        
         public String getNombre_carrera() { return nombre_carrera; }
-        public FacultadItem getFacultad() { return facultad; } // Getter para facultad
+        public FacultadItem getFacultad() { return facultad; }
     }
 
     // Clase auxiliar para representar una Facultad en ComboBox
     public static class FacultadItem {
         private int id;
         private String nombre;
-
+        
         public FacultadItem(int id, String nombre) {
             this.id = id;
             this.nombre = nombre;
         }
-
+        
         public int getId() { return id; }
         public String getNombre() { return nombre; }
-
+        
         @Override
         public String toString() { return nombre; }
     }
 
-    // Método auxiliar para sincronizar Calificacion tras cualquier cambio
-    private void sincronizarCalificaciones() {
-        try (Connection conn = DatabaseConnection.getConnection()) {
-            // 1. Para cada curso, asegurar que todos los estudiantes inscritos en la materia tengan calificación
-            String sqlCursos = "SELECT cu.id_curso, cu.id_materia FROM Curso cu";
-            try (PreparedStatement pstmtCursos = conn.prepareStatement(sqlCursos);
-                 ResultSet rsCursos = pstmtCursos.executeQuery()) {
-                while (rsCursos.next()) {
-                    int idCurso = rsCursos.getInt("id_curso");
-                    int idMateria = rsCursos.getInt("id_materia");
-                    // Buscar todos los estudiantes inscritos en esa materia
-                    String sqlEsts = "SELECT e.id_estudiante FROM Estudiante e JOIN Usuario u ON e.id_usuario = u.id_usuario JOIN Calificacion c2 ON c2.id_estudiante = e.id_estudiante WHERE c2.id_curso = ? UNION SELECT e.id_estudiante FROM Estudiante e JOIN Usuario u ON e.id_usuario = u.id_usuario JOIN Calificacion c2 ON c2.id_estudiante = e.id_estudiante WHERE c2.id_curso != ? AND e.id_estudiante NOT IN (SELECT id_estudiante FROM Calificacion WHERE id_curso = ?)";
-                    try (PreparedStatement pstmtEsts = conn.prepareStatement(sqlEsts)) {
-                        pstmtEsts.setInt(1, idCurso);
-                        pstmtEsts.setInt(2, idCurso);
-                        pstmtEsts.setInt(3, idCurso);
-                        ResultSet rsEsts = pstmtEsts.executeQuery();
-                        while (rsEsts.next()) {
-                            int idEstudiante = rsEsts.getInt("id_estudiante");
-                            String sqlCal = "INSERT OR IGNORE INTO Calificacion (id_estudiante, id_curso) VALUES (?, ?)";
-                            try (PreparedStatement pstmtCal = conn.prepareStatement(sqlCal)) {
-                                pstmtCal.setInt(1, idEstudiante);
-                                pstmtCal.setInt(2, idCurso);
-                                pstmtCal.executeUpdate();
-                            }
-                        }
-                    }
-                }
-            }
-            // 2. Eliminar calificaciones huérfanas (sin estudiante o curso válido)
-            String sqlClean = "DELETE FROM Calificacion WHERE id_estudiante NOT IN (SELECT id_estudiante FROM Estudiante) OR id_curso NOT IN (SELECT id_curso FROM Curso)";
-            try (PreparedStatement pstmtClean = conn.prepareStatement(sqlClean)) {
-                pstmtClean.executeUpdate();
-            }
-        } catch (Exception e) {
-            showError("Error al sincronizar calificaciones: " + e.getMessage());
-        }
-    }
-
     private void refreshTable() {
-        usuariosTable.getItems().clear();
-        String sql = "SELECT u.id_usuario, u.cedula, u.nombre_usuario, u.apellido_usuario, u.rol, " +
-                     "CASE WHEN u.rol = 'ESTUDIANTE' THEN c.nombre_carrera ELSE NULL END as carrera, " +
-                     "CASE WHEN u.rol = 'PROFESOR' THEN GROUP_CONCAT(DISTINCT m.nombre_materia) ELSE NULL END as materias " +
-                     "FROM Usuario u " +
-                     "LEFT JOIN Estudiante e ON u.id_usuario = e.id_usuario " +
-                     "LEFT JOIN Carrera c ON e.id_carrera = c.id_carrera " +
-                     "LEFT JOIN Profesor p ON u.id_usuario = p.id_usuario " +
-                     "LEFT JOIN Curso cu ON p.id_profesor = cu.id_profesor " +
-                     "LEFT JOIN Materia m ON cu.id_materia = m.id_materia " +
-                     "GROUP BY u.id_usuario, u.cedula, u.nombre_usuario, u.apellido_usuario, u.rol, c.nombre_carrera";
         try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql);
-             ResultSet rs = pstmt.executeQuery()) {
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(
+                "SELECT u.id_usuario, u.cedula, u.nombre_usuario, u.apellido_usuario, u.rol FROM Usuario u")) {
+            
+            usuariosTable.getItems().clear();
             while (rs.next()) {
                 usuariosTable.getItems().add(new UsuarioRow(
                     rs.getInt("id_usuario"),
                     rs.getString("cedula"),
                     rs.getString("nombre_usuario"),
                     rs.getString("apellido_usuario"),
-                    rs.getString("rol"),
-                    rs.getString("carrera"),
-                    rs.getString("materias")
+                    rs.getString("rol")
                 ));
             }
         } catch (SQLException e) {
-            e.printStackTrace();
             showError("Error al cargar usuarios: " + e.getMessage());
         }
     }

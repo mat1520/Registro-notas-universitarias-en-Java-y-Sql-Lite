@@ -1,164 +1,94 @@
-![Logo UTIA](src/main/resources/images/logo.png)
+# Sistema de Gestión de Notas Universitarias (UTIA)
 
-# Sistema de Gestión de Notas Universitarias
+![Logo UTIA](https://i.imgur.com/O4q5dJ5.png)
 
-## Índice
-1. [Descripción](#descripción)
-2. [Instalación y Primeros Pasos](#instalación-y-primeros-pasos)
-3. [Datos de Ejemplo Incluidos](#datos-de-ejemplo-incluidos)
-4. [Credenciales de Ejemplo](#credenciales-de-ejemplo-actualizadas)
-5. [Manual de Usuario](#manual-de-usuario)
-6. [Diagramas y Flujos](#diagramas-y-flujos)
-7. [Uso Rápido](#uso-rápido)
-8. [Notas Técnicas](#notas-técnicas)
-9. [Estructura de la Base de Datos](#estructura-de-la-base-de-datos)
-10. [Autores y Créditos](#autores-y-créditos)
+Un sistema de escritorio robusto y completo para la gestión académica, desarrollado en Java con JavaFX y SQLite. Permite la administración de estudiantes, profesores, materias, carreras y calificaciones, con un sistema de roles bien definido.
 
 ---
 
-## Descripción
-Sistema universitario para la gestión de notas, usuarios, materias y carreras. Incluye roles de Administrador, Profesor y Estudiante. Interfaz moderna, validaciones robustas y sincronización automática de datos.
+## 🚀 Características Principales
+
+-   **Gestión por Roles:** Tres niveles de acceso con distintas funcionalidades:
+    -   **Administrador:** Control total sobre usuarios, carreras, y materias.
+    -   **Profesor:** Asignación y modificación de notas para las materias a su cargo.
+    -   **Estudiante:** Consulta de calificaciones y progreso académico.
+-   **Interfaz Gráfica Intuitiva:** Desarrollada con JavaFX para una experiencia de usuario moderna y amigable.
+-   **Base de Datos Integrada:** Utiliza SQLite, una base de datos embebida que no requiere instalación ni configuración externa. ¡Solo ejecuta la aplicación!
+-   **Seguridad:** Implementación de contraseñas seguras y aleatorias para cada usuario.
+-   **Lógica de Negocio Coherente:** El sistema asegura que los estudiantes solo se inscriban en materias de su carrera y que los profesores solo califiquen en los cursos que imparten.
 
 ---
 
-## 🚀 Instalación y Primeros Pasos
+## 🛠️ Tecnologías Utilizadas
 
-### Requisitos Previos
-- Java 17 o superior (requerido por la configuración de Maven)
-- Maven para la gestión de dependencias
-
-### Pasos de Instalación
-1. **Clona el repositorio:**
-   ```bash
-   git clone https://github.com/mat1520/Registro-notas-universitarias-en-Java-y-Sql-Lite
-   cd POO-FINAL
-   ```
-2. **Base de datos:**
-   - El archivo `universidad.db` ya está incluido y listo para usar.
-   - No es necesario ejecutar scripts de inicialización.
-3. **Compila y ejecuta:**
-   ```bash
-   mvnd javafx:run
-   ```
+-   **Lenguaje:** Java 17
+-   **Interfaz Gráfica:** JavaFX
+-   **Base de Datos:** SQLite
+-   **Gestor de Dependencias:** Maven
 
 ---
 
-## 🗃️ Datos de Ejemplo Incluidos
-- **Carreras disponibles:**
-  - Ingeniería en Sistemas
-  - Ingeniería Mecatrónica
-  - Ingeniería Civil
-  - (Ver aplicación para lista actualizada)
-- **Estudiantes, Profesores y Administradores:**
-  - Credenciales actualizadas (ver tabla de ejemplo abajo)
-  - Contraseñas seguras y únicas para cada usuario
-- **Materias y cursos** distribuidos entre carreras y profesores
+## 📋 Requisitos e Instalación
+
+### Requisitos
+
+-   JDK (Java Development Kit) 17 o superior.
+-   Apache Maven.
+
+### Pasos para la Ejecución
+
+1.  **Clonar el Repositorio:**
+    ```bash
+    git clone [https://github.com/tu_usuario/tu_repositorio.git](https://github.com/tu_usuario/tu_repositorio.git)
+    cd tu_repositorio
+    ```
+
+2.  **Base de Datos:**
+    El proyecto incluye el archivo `universidad.db` preconfigurado con todos los datos necesarios (usuarios, materias, notas, etc.). No es necesario ejecutar ningún script SQL adicional.
+
+3.  **Compilar y Ejecutar con Maven:**
+    Abre una terminal en la raíz del proyecto y ejecuta el siguiente comando:
+    ```bash
+    mvn clean javafx:run
+    ```
+    La aplicación se iniciará y mostrará la ventana de login.
 
 ---
 
-## 🔑 Credenciales de Ejemplo (Actualizadas)
+## 🔑 Credenciales de Acceso
 
-| Cédula      | Nombre                | Apellido     | Contraseña                | Rol         |
-|-------------|-----------------------|--------------|---------------------------|-------------|
-| 1752202323  | Gabriela              | Sánchez      | Yx#2K!pm94$@WrLv          | ESTUDIANTE  |
-| 1722580873  | Samuel                | Vargas       | Zp@!7WL^X9Kqmr38          | ESTUDIANTE  |
-| 1754206744  | Óscar                 | Rodríguez    | K!LpM9g@WzX7r38r          | ADMIN       |
-| 1725098373  | Ronnie                | Martínez     | 9m@L!pK9^WzX6gR83         | PROFESOR    |
-| 1725098320  | Mauricio              | Rios         | MqLpK^WzX6gR83            | PROFESOR    |
-| 1727291823  | Marcela               | Venegas      | pZ7K^LqM@!WzX7gR83        | PROFESOR    |
-| ...         | ...                   | ...          | ...                       | ...         |
+Usa las siguientes credenciales para acceder al sistema. El **usuario** es siempre el número de **cédula**.
 
-> **Nota:** Consulta las imágenes o la base de datos para la lista completa de credenciales.
-
----
-
-## 📘 Manual de Usuario
-
-Ya está disponible el **Manual de Usuario** para el sistema. Puedes consultarlo en el archivo:
-
-- `Manual de Usuario UTIA SISTEMA DE CALIFICACIONES.pdf` (ubicado en la raíz del proyecto)
-
-Este manual contiene instrucciones detalladas para el uso de todas las funcionalidades del sistema, tanto para administradores, profesores como estudiantes.
-
-> **Nota Importante:** El manual de usuario contiene capturas de pantalla con datos de ejemplo (usuarios, notas, etc.) que pueden no estar actualizados. Para obtener las credenciales y datos más recientes, por favor consulta la sección "Credenciales de Ejemplo" de este README o directamente la base de datos universidad.db.
+| Rol | Nombre Completo | Cédula (Usuario) | Contraseña |
+| :--- | :--- | :--- | :--- |
+| **ADMIN** | Admin Principal | `1754198487` | `aF5#hJkL9!sD` |
+| **PROFESOR** | Engelees Alvarado | `1753797065` | `gH4@lPqW2$eR` |
+| **PROFESOR** | Kamilah Arcentale | `1725080327` | `tY7*uI1!oP5@` |
+| **PROFESOR** | Aaron Barriga | `1752202323` | `zX3$cV8%bN6#` |
+| **PROFESOR** | Katherine Bolaños | `1727295006` | `aS9*dF2!gH7@` |
+| **PROFESOR** | Andres Bustos | `1150350682` | `jK5$lO1%pQ4#` |
+| **ESTUDIANTE**| Giullyana Calvache | `1728854686` | `wE6@rT2*yU8!` |
+| **ESTUDIANTE**| Madelin Calvopiña | `1751445550` | `iO3%pL7@kS1#` |
+| **ESTUDIANTE**| Benjamin Carrasco | `1729354637` | `bN9#mK2$jH5@` |
 
 ---
 
-## 📊 Diagramas y Flujos
+## 🗄️ Estructura de la Base de Datos
 
-### Diagrama de Flujo General del Sistema
+El sistema utiliza una base de datos relacional con las siguientes tablas principales para mantener la integridad de los datos:
 
-```mermaid
-flowchart TD
-    A[Inicio] --> B[Login]
-    B -->|Admin| C[Gestión de Usuarios]
-    B -->|Profesor| D[Gestión de Notas]
-    B -->|Estudiante| E[Consulta de Notas]
-    C --> F[Gestión de Carreras/Materias]
-    D --> E
-    F --> G[Salir]
-    E --> G
-    D --> G
-    C --> G
-```
-
+-   `Usuario`: Almacena la información base y credenciales de todos los usuarios.
+-   `Administrador`, `Profesor`, `Estudiante`: Tablas de roles que extienden la información de `Usuario`.
+-   `Facultad`, `Carrera`, `Materia`: Definen la estructura académica.
+-   `Curso`: Vincula una materia con un profesor para un período específico.
+-   `Calificacion`, `Parcial`, `Subnota`: Gestionan todo el sistema de evaluación.
 
 ---
 
-## 📝 Uso Rápido
-1. Inicia sesión como **Administrador** para gestionar carreras, materias, usuarios y asignaciones.
-2. Inicia sesión como **Profesor** para ver y calificar estudiantes en sus materias.
-3. Inicia sesión como **Estudiante** para consultar sus notas y materias.
+## 🧑‍💻 Autores
 
----
+Este proyecto fue desarrollado por:
 
-## 💡 Notas Técnicas
-- El sistema se adapta a pantalla completa automáticamente.
-- Los combos de carrera y materia se actualizan dinámicamente.
-- Validaciones robustas para cédula, campos obligatorios y relaciones.
-- CRUD completo para usuarios, materias y carreras.
-
----
-
-## 📂 Estructura de la Base de Datos
-- El archivo `universidad.db` contiene toda la información necesaria.
-- No es necesario ejecutar scripts adicionales.
-
----
-
-## 👨‍💻 Autores y Créditos
-- Proyecto UTIA – Universidad Tecnológica de Inteligencia Artificial
-- Desarrollado por: Ariel Melo, Mateo Yánez, Maria Chango
-
-¿Dudas o sugerencias? ¡Contáctanos! 
-arielmelo1520@hotmail.com
-
-## 📝 Cómo Funciona
-El sistema de gestión de notas universitarias está diseñado para facilitar la administración de notas, usuarios, materias y carreras. Utiliza JavaFX para la interfaz gráfica y SQLite para el almacenamiento de datos, siguiendo el patrón MVC (Modelo-Vista-Controlador).
-
-### Características Principales
-- **Gestión de Usuarios**: Administración de roles (Administrador, Profesor, Estudiante) con validaciones de contraseñas y permisos.
-- **Gestión de Materias y Carreras**: Creación, edición y eliminación de materias y carreras, con validaciones para evitar conflictos.
-- **Gestión de Notas**: Registro y consulta de notas por parte de profesores y estudiantes.
-- **Interfaz Adaptativa**: Diseño responsivo que se adapta a diferentes tamaños de pantalla.
-
-### Tecnologías Utilizadas
-- **JavaFX**: Para la interfaz de usuario.
-- **SQLite**: Para el almacenamiento de datos.
-- **Maven**: Para la gestión de dependencias y compilación del proyecto.
-
-### Patrones de Diseño
-- **MVC**: Separación clara entre la lógica de negocio, la interfaz de usuario y el control de datos.
-- **DAO**: Acceso a datos a través de objetos de acceso a datos, facilitando la interacción con la base de datos.
-
-### Validaciones y Reglas de Negocio
-- Las contraseñas deben tener al menos 12 caracteres.
-- No se pueden eliminar carreras con estudiantes o materias asociadas.
-- Se realizan validaciones de cédula y campos obligatorios.
-
-(Recuerda que puedes cambiar las contraseñas desde la aplicación si tienes permisos de administrador.)
-
-## Estructura principal
-- JavaFX + SQLite
-- Patrón MVC
-- Usuarios: Admin, Profesor, Estudiante
+-   Ariel Melo
+-   Mateo Yánez
+-   Maria Chango

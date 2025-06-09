@@ -21,4 +21,5 @@ com\universidad\controller\AdminController$CarreraInput.class
 com\universidad\controller\MainController.class
 com\universidad\controller\AdminController$UsuarioInput.class
 com\universidad\controller\EstudianteController$SubnotaRow.class
+com\universidad\controller\ProfesorController$2.class
 com\universidad\controller\ProfesorController.class

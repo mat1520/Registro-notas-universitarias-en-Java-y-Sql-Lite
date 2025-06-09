@@ -89,7 +89,7 @@ public class EstudianteController implements MainController {
         }
         ObservableList<SubnotaRow> rows = FXCollections.observableArrayList();
         double suma = 0.0;
-        String sql = "SELECT sn.id_subnota, p.Nombre as parcial_nombre, sn.Numero as numero_subnota, sn.valor, sn.id_calificacion FROM Subnota sn " +
+        String sql = "SELECT sn.id_subnota, p.nombre as parcial_nombre, sn.numero_nota as numero_subnota, sn.valor, sn.id_calificacion FROM Subnota sn " +
                      "JOIN Calificacion c ON sn.id_calificacion = c.id_calificacion " +
                      "JOIN Curso cu ON c.id_curso = cu.id_curso " +
                      "JOIN Parcial p ON sn.id_parcial = p.id_parcial " +

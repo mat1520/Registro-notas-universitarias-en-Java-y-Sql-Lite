@@ -18,16 +18,20 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
 import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.Spinner;
+import javafx.scene.control.SpinnerValueFactory;
+import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
 
 public class ProfesorController implements MainController {
@@ -126,7 +130,7 @@ public class ProfesorController implements MainController {
             }
 
             if (idCarrera == -1) {
-                showError("Could not determine the career of the course or course not found.");
+                showError("No se pudo determinar la carrera del curso");
                 return;
             }
 
@@ -141,55 +145,102 @@ public class ProfesorController implements MainController {
             }
 
             if (estudiantes.isEmpty()) {
-                showError("No students found in the career of this course.");
+                showError("No hay estudiantes registrados en esta carrera");
                 return;
             }
 
-            // Diálogo para agregar subnota
             Dialog<SubnotaInput> dialog = new Dialog<>();
             dialog.setTitle("Agregar Subnota");
-            dialog.setHeaderText("Seleccione estudiante y datos de la subnota");
+            dialog.setHeaderText("Complete los datos de la subnota");
+            
             ComboBox<EstudianteItem> estudianteCombo = new ComboBox<>();
             estudianteCombo.getItems().addAll(estudiantes);
             estudianteCombo.setValue(estudiantes.get(0));
+            
             ComboBox<Integer> parcialCombo = new ComboBox<>();
             parcialCombo.getItems().addAll(1, 2, 3);
             parcialCombo.setValue(1);
+            
             Spinner<Integer> numeroSpinner = new Spinner<>(1, 10, 1);
-            Spinner<Double> valorSpinner = new Spinner<>(0.0, 10.0, 0.0, 0.1);
+            
+            // Configurar el Spinner de valor con restricciones
+            SpinnerValueFactory.DoubleSpinnerValueFactory valueFactory = 
+                new SpinnerValueFactory.DoubleSpinnerValueFactory(0.0, 10.0, 0.0, 0.01);
+            Spinner<Double> valorSpinner = new Spinner<>();
+            valorSpinner.setValueFactory(valueFactory);
             valorSpinner.setEditable(true);
+            
+            // Agregar listener para formatear a 2 decimales
+            valorSpinner.getEditor().textProperty().addListener((obs, oldValue, newValue) -> {
+                if (newValue == null || newValue.isEmpty()) return;
+                try {
+                    double value = Double.parseDouble(newValue);
+                    if (value > 10.0) {
+                        valorSpinner.getEditor().setText("10.00");
+                    } else {
+                        String formatted = String.format("%.2f", value);
+                        if (!formatted.equals(newValue)) {
+                            valorSpinner.getEditor().setText(formatted);
+                        }
+                    }
+                } catch (NumberFormatException e) {
+                    valorSpinner.getEditor().setText(oldValue);
+                }
+            });
+
             GridPane grid = new GridPane();
             grid.setHgap(10);
             grid.setVgap(10);
-            grid.add(new Label("Estudiante:"), 0, 0); grid.add(estudianteCombo, 1, 0);
-            grid.add(new Label("Parcial:"), 0, 1); grid.add(parcialCombo, 1, 1);
-            grid.add(new Label("N° Subnota:"), 0, 2); grid.add(numeroSpinner, 1, 2);
-            grid.add(new Label("Valor (0-10):"), 0, 3); grid.add(valorSpinner, 1, 3);
+            grid.add(new Label("Estudiante:"), 0, 0);
+            grid.add(estudianteCombo, 1, 0);
+            grid.add(new Label("Parcial:"), 0, 1);
+            grid.add(parcialCombo, 1, 1);
+            grid.add(new Label("N° Subnota:"), 0, 2);
+            grid.add(numeroSpinner, 1, 2);
+            grid.add(new Label("Valor (0-10):"), 0, 3);
+            grid.add(valorSpinner, 1, 3);
+            
+            // Actualizar rango de número de subnota según el parcial seleccionado
+            parcialCombo.setOnAction(e -> {
+                int parcial = parcialCombo.getValue();
+                if (parcial == 1) {
+                    numeroSpinner.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 3, 1));
+                } else if (parcial == 2) {
+                    numeroSpinner.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(4, 6, 4));
+                } else {
+                    numeroSpinner.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(7, 10, 7));
+                }
+            });
+
             dialog.getDialogPane().setContent(grid);
             ButtonType saveButtonType = new ButtonType("Guardar", ButtonBar.ButtonData.OK_DONE);
             dialog.getDialogPane().getButtonTypes().addAll(saveButtonType, ButtonType.CANCEL);
+            
             dialog.setResultConverter(dialogButton -> {
                 if (dialogButton == saveButtonType) {
-                    // Forzar commit del valor escrito en el Spinner
                     valorSpinner.getEditor().commitValue();
                     String valorText = valorSpinner.getEditor().getText();
                     double valor;
                     try {
                         valor = Double.parseDouble(valorText);
                     } catch (NumberFormatException ex) {
-                        showError("El valor de la subnota debe ser un número válido.");
+                        showError("El valor de la subnota debe ser un número válido");
                         return null;
                     }
+                    
                     int parcial = parcialCombo.getValue();
                     int numero = numeroSpinner.getValue();
+                    
                     // Validar rango de subnota según parcial
-                    if ((parcial == 1 && (numero < 1 || numero > 3)) ||
-                        (parcial == 2 && (numero < 4 || numero > 6)) ||
-                        (parcial == 3 && (numero < 7 || numero > 10))) {
-                        showError("El número de subnota para el parcial " + parcial + " debe ser: " +
-                                (parcial == 1 ? "1-3" : parcial == 2 ? "4-6" : "7-10"));
+                    if (!validarRangoSubnota(parcial, numero)) {
                         return null;
                     }
+                    
+                    // Validar valor de la subnota
+                    if (!validarValorSubnota(valor)) {
+                        return null;
+                    }
+                    
                     return new SubnotaInput(estudianteCombo.getValue(), parcial, numero, valor);
                 }
                 return null;
@@ -198,7 +249,8 @@ public class ProfesorController implements MainController {
             Optional<SubnotaInput> result = dialog.showAndWait();
             if (result.isPresent()) {
                 SubnotaInput input = result.get();
-                // Obtener id_calificacion
+                
+                // Obtener o crear calificación
                 int idCalificacion = -1;
                 try (PreparedStatement pstmt = conn.prepareStatement(
                         "SELECT id_calificacion FROM Calificacion WHERE id_estudiante = ? AND id_curso = ?")) {
@@ -211,15 +263,36 @@ public class ProfesorController implements MainController {
                 }
 
                 if (idCalificacion == -1) {
-                    showError("No se encontró la calificación para este estudiante y materia.");
-                    return;
+                    try (PreparedStatement pstmt = conn.prepareStatement(
+                            "INSERT INTO Calificacion (id_estudiante, id_curso, estado) VALUES (?, ?, 'NO_CALIFICADO')", 
+                            PreparedStatement.RETURN_GENERATED_KEYS)) {
+                        pstmt.setInt(1, input.estudiante.getId());
+                        pstmt.setInt(2, selectedCurso.getIdCurso());
+                        pstmt.executeUpdate();
+                        
+                        try (ResultSet generatedKeys = pstmt.getGeneratedKeys()) {
+                            if (generatedKeys.next()) {
+                                idCalificacion = generatedKeys.getInt(1);
+                            } else {
+                                showError("Error al crear la calificación");
+                                return;
+                            }
+                        }
+                    }
                 }
 
                 // Obtener id_parcial
+                String nombreParcial = "Primer Parcial";
+                if (input.numeroParcialSeleccionado == 2) {
+                    nombreParcial = "Segundo Parcial";
+                } else if (input.numeroParcialSeleccionado == 3) {
+                    nombreParcial = "Examen Final";
+                }
+                
                 int idParcial = -1;
                 try (PreparedStatement pstmt = conn.prepareStatement(
-                        "SELECT id_parcial FROM Parcial WHERE numero = ?")) {
-                    pstmt.setInt(1, input.numeroParcialSeleccionado);
+                        "SELECT id_parcial FROM Parcial WHERE nombre = ?")) {
+                    pstmt.setString(1, nombreParcial);
                     ResultSet rs = pstmt.executeQuery();
                     if (rs.next()) {
                         idParcial = rs.getInt("id_parcial");
@@ -227,40 +300,23 @@ public class ProfesorController implements MainController {
                 }
 
                 if (idParcial == -1) {
-                    showError("No se encontró el parcial seleccionado.");
-                    return;
-                }
-
-                // Validar máximo 10 subnotas
-                List<SubnotaRow> subnotas = findSubnotasByCalificacion(conn, idCalificacion);
-                if (subnotas.size() >= 10) {
-                    showError("No se pueden agregar más de 10 subnotas para esta materia.");
+                    showError("No se encontró el parcial seleccionado");
                     return;
                 }
 
                 // Validar que no exista ya una subnota con ese número en ese parcial
-                for (SubnotaRow s : subnotas) {
-                    if (s.getId_parcial_db() == idParcial && s.getNumero() == input.numero) {
-                        showError("Ya existe una subnota número " + input.numero + " para el parcial " + input.numeroParcialSeleccionado + ".");
-                        return;
-                    }
+                if (!validarSubnotaExistente(conn, idCalificacion, idParcial, input.numero, null)) {
+                    return;
                 }
 
                 // Validar suma de subnotas
-                double suma = input.valor;
-                for (SubnotaRow s : subnotas) {
-                    if (s.getId_parcial_db() == idParcial) {
-                        suma += s.getValor();
-                    }
-                }
-                if (suma > 10.0) {
-                    showError("La suma de las subnotas para el parcial " + input.numeroParcialSeleccionado + " no puede exceder 10.0");
+                if (!validarSumaSubnotas(conn, idCalificacion, idParcial, input.valor, null)) {
                     return;
                 }
 
                 // Crear subnota
                 insertSubnota(conn, idCalificacion, idParcial, input.numero, input.valor);
-                showInfo("Subnota agregada correctamente.");
+                showInfo("Subnota agregada correctamente");
                 loadSubnotas();
             }
         } catch (SQLException e) {
@@ -268,6 +324,99 @@ public class ProfesorController implements MainController {
         } catch (Exception e) {
             showError("Error inesperado: " + e.getMessage());
         }
+    }
+
+    private boolean validarRangoSubnota(int parcial, int numero) {
+        if (parcial == 1 && (numero < 1 || numero > 3)) {
+            showError("Para el Primer Parcial, el número de subnota debe estar entre 1 y 3");
+            return false;
+        } else if (parcial == 2 && (numero < 4 || numero > 6)) {
+            showError("Para el Segundo Parcial, el número de subnota debe estar entre 4 y 6");
+            return false;
+        } else if (parcial == 3 && (numero < 7 || numero > 10)) {
+            showError("Para el Examen Final, el número de subnota debe estar entre 7 y 10");
+            return false;
+        }
+        return true;
+    }
+
+    private boolean validarValorSubnota(double valor) {
+        if (valor < 0 || valor > 10) {
+            showError("El valor de la subnota debe estar entre 0 y 10");
+            return false;
+        }
+        // Validar que el valor tenga máximo 2 decimales
+        String valorStr = String.format("%.2f", valor);
+        try {
+            double valorRedondeado = Double.parseDouble(valorStr);
+            if (valorRedondeado != valor) {
+                showError("El valor de la subnota solo puede tener hasta 2 decimales");
+                return false;
+            }
+        } catch (NumberFormatException e) {
+            showError("Error al validar el formato del valor");
+            return false;
+        }
+        return true;
+    }
+
+    private boolean validarSumaSubnotas(Connection conn, int idCalificacion, int idParcial, double nuevoValor, Integer idSubnotaExcluir) throws SQLException {
+        List<SubnotaRow> subnotas = findSubnotasByCalificacion(conn, idCalificacion);
+        double suma = 0.0;
+        
+        // Primero sumamos todas las subnotas del mismo parcial
+        for (SubnotaRow s : subnotas) {
+            if (s.getId_parcial_db() == idParcial) {
+                // Si estamos editando, excluimos la nota actual
+                if (idSubnotaExcluir == null || s.getIdSubnota() != idSubnotaExcluir) {
+                    suma += s.getValor();
+                }
+            }
+        }
+        
+        // Agregamos el nuevo valor
+        suma += nuevoValor;
+        
+        // Definimos el límite según el parcial
+        double limite;
+        String parcialNombre;
+        
+        if (idParcial == 1) {
+            limite = 30.0;
+            parcialNombre = "Primer Parcial";
+        } else if (idParcial == 2) {
+            limite = 30.0;
+            parcialNombre = "Segundo Parcial";
+        } else {
+            limite = 40.0;
+            parcialNombre = "Examen Final";
+        }
+        
+        if (suma > limite) {
+            showError(String.format("La suma de las subnotas para el %s no puede exceder %.1f. Suma actual: %.2f", 
+                      parcialNombre, limite, suma));
+            return false;
+        }
+        return true;
+    }
+
+    private boolean validarSubnotaExistente(Connection conn, int idCalificacion, int idParcial, int numero, Integer idSubnotaExcluir) throws SQLException {
+        List<SubnotaRow> subnotas = findSubnotasByCalificacion(conn, idCalificacion);
+        
+        String nombreParcial = "Primer Parcial";
+        if (idParcial == 2) nombreParcial = "Segundo Parcial";
+        else if (idParcial == 3) nombreParcial = "Examen Final";
+        
+        for (SubnotaRow s : subnotas) {
+            if (s.getId_parcial_db() == idParcial && 
+                s.getNumero_nota() == numero && 
+                (idSubnotaExcluir == null || s.getIdSubnota() != idSubnotaExcluir)) {
+                showError(String.format("Ya existe una subnota número %d para el %s. Por favor, elija otro número de subnota.", 
+                          numero, nombreParcial));
+                return false;
+            }
+        }
+        return true;
     }
 
     private static class EstudianteItem {
@@ -330,7 +479,10 @@ public class ProfesorController implements MainController {
             return;
         }
         ObservableList<SubnotaRow> rows = FXCollections.observableArrayList();
-        String sql = "SELECT sn.id_subnota, p.Nombre as parcial_nombre, sn.Numero as subnota_numero, sn.valor, sn.id_calificacion, e.id_estudiante, u.nombre_usuario || ' ' || u.apellido_usuario as nombre_completo, sn.id_parcial " +
+        String sql = "SELECT sn.id_subnota, sn.id_calificacion, sn.id_parcial, sn.numero_nota, sn.valor, " +
+                     "p.nombre as parcial_nombre, " +
+                     "c.id_estudiante, " +
+                     "u.nombre_usuario || ' ' || u.apellido_usuario as nombre_completo " +
                      "FROM Subnota sn " +
                      "JOIN Calificacion c ON sn.id_calificacion = c.id_calificacion " +
                      "JOIN Estudiante e ON c.id_estudiante = e.id_estudiante " +
@@ -347,11 +499,11 @@ public class ProfesorController implements MainController {
                     rs.getInt("id_subnota"),
                     rs.getInt("id_estudiante"),
                     rs.getString("nombre_completo"),
-                    rs.getInt("id_parcial"), // Almacena id_parcial
-                    rs.getInt("subnota_numero"), // Almacena número de subnota
+                    rs.getInt("id_parcial"),
+                    rs.getInt("numero_nota"),
                     rs.getDouble("valor"),
                     rs.getInt("id_calificacion"),
-                    rs.getString("parcial_nombre") // Almacena nombre del parcial
+                    rs.getString("parcial_nombre")
                 ));
             }
             subnotasTable.setItems(rows);
@@ -362,12 +514,27 @@ public class ProfesorController implements MainController {
 
     private void setupSubnotasTable() {
         estudianteColumn.setCellValueFactory(new PropertyValueFactory<>("nombre_completo"));
-        parcialColumn.setCellValueFactory(new PropertyValueFactory<>("parcial_nombre")); // Mapear a la propiedad correcta
-        numeroColumn.setCellValueFactory(new PropertyValueFactory<>("numero")); // Mapear a la propiedad correcta para el número de subnota
+        parcialColumn.setCellValueFactory(new PropertyValueFactory<>("parcial_nombre"));
+        numeroColumn.setCellValueFactory(new PropertyValueFactory<>("numero_nota"));
         valorColumn.setCellValueFactory(new PropertyValueFactory<>("valor"));
-        accionesColumn.setCellFactory(param -> new javafx.scene.control.TableCell<>() {
-            private final javafx.scene.control.Button editButton = new javafx.scene.control.Button("Editar");
-            private final javafx.scene.control.Button deleteButton = new javafx.scene.control.Button("Eliminar");
+        
+        // Formatear la columna de valor para mostrar solo 2 decimales
+        valorColumn.setCellFactory(tc -> new TableCell<SubnotaRow, Double>() {
+            @Override
+            protected void updateItem(Double valor, boolean empty) {
+                super.updateItem(valor, empty);
+                if (empty || valor == null) {
+                    setText(null);
+                } else {
+                    setText(String.format("%.2f", valor));
+                }
+            }
+        });
+
+        accionesColumn.setCellFactory(param -> new TableCell<>() {
+            private final Button editButton = new Button("Editar");
+            private final Button deleteButton = new Button("Eliminar");
+            private final HBox buttons = new HBox(5, editButton, deleteButton);
             {
                 editButton.setOnAction(event -> {
                     SubnotaRow row = getTableView().getItems().get(getIndex());
@@ -381,12 +548,7 @@ public class ProfesorController implements MainController {
             @Override
             protected void updateItem(Void item, boolean empty) {
                 super.updateItem(item, empty);
-                if (empty) {
-                    setGraphic(null);
-                } else {
-                    javafx.scene.layout.HBox buttons = new javafx.scene.layout.HBox(5, editButton, deleteButton);
-                    setGraphic(buttons);
-                }
+                setGraphic(empty ? null : buttons);
             }
         });
     }
@@ -396,8 +558,32 @@ public class ProfesorController implements MainController {
             Dialog<Double> dialog = new Dialog<>();
             dialog.setTitle("Editar Subnota");
             dialog.setHeaderText("Editar valor de la subnota");
-            Spinner<Double> valorSpinner = new Spinner<>(0.0, 10.0, row.getValor(), 0.1);
+
+            // Configurar el Spinner con restricciones
+            SpinnerValueFactory.DoubleSpinnerValueFactory valueFactory = 
+                new SpinnerValueFactory.DoubleSpinnerValueFactory(0.0, 10.0, row.getValor(), 0.01);
+            Spinner<Double> valorSpinner = new Spinner<>();
+            valorSpinner.setValueFactory(valueFactory);
             valorSpinner.setEditable(true);
+            
+            // Agregar listener para formatear a 2 decimales
+            valorSpinner.getEditor().textProperty().addListener((obs, oldValue, newValue) -> {
+                if (newValue == null || newValue.isEmpty()) return;
+                try {
+                    double value = Double.parseDouble(newValue);
+                    if (value > 10.0) {
+                        valorSpinner.getEditor().setText("10.00");
+                    } else {
+                        String formatted = String.format("%.2f", value);
+                        if (!formatted.equals(newValue)) {
+                            valorSpinner.getEditor().setText(formatted);
+                        }
+                    }
+                } catch (NumberFormatException e) {
+                    valorSpinner.getEditor().setText(oldValue);
+                }
+            });
+
             GridPane grid = new GridPane();
             grid.setHgap(10);
             grid.setVgap(10);
@@ -406,17 +592,11 @@ public class ProfesorController implements MainController {
             dialog.getDialogPane().setContent(grid);
             ButtonType saveButtonType = new ButtonType("Guardar", ButtonBar.ButtonData.OK_DONE);
             dialog.getDialogPane().getButtonTypes().addAll(saveButtonType, ButtonType.CANCEL);
+            
             dialog.setResultConverter(dialogButton -> {
                 if (dialogButton == saveButtonType) {
-                    // Forzar commit del valor escrito en el Spinner
                     valorSpinner.getEditor().commitValue();
-                    String valorText = valorSpinner.getEditor().getText();
-                    try {
-                        return Double.parseDouble(valorText);
-                    } catch (NumberFormatException ex) {
-                        showError("El valor de la subnota debe ser un número válido.");
-                        return null;
-                    }
+                    return valorSpinner.getValue();
                 }
                 return null;
             });
@@ -424,40 +604,23 @@ public class ProfesorController implements MainController {
             Optional<Double> result = dialog.showAndWait();
             if (result.isPresent()) {
                 double valorNuevo = result.get();
-                // Validar máximo 10 subnotas
-                List<SubnotaRow> subnotas = findSubnotasByCalificacion(conn, row.getIdCalificacion());
-                if (subnotas.size() > 10) {
-                    showError("No se pueden tener más de 10 subnotas para esta materia.");
+                
+                // Validaciones
+                if (!validarValorSubnota(valorNuevo)) {
                     return;
                 }
-
-                // Validar que no exista ya una subnota con ese número en ese parcial (excepto la actual)
-                for (SubnotaRow s : subnotas) {
-                    if (s.getId_parcial_db() == row.getId_parcial_db() && s.getNumero() == row.getNumero() && s.getIdSubnota() != row.getIdSubnota()) {
-                        showError("Ya existe una subnota número " + row.getNumero() + " para el parcial " + row.getParcial_nombre() + ".");
-                        return;
-                    }
-                }
-
-                // Validar suma de subnotas
-                double suma = valorNuevo;
-                for (SubnotaRow s : subnotas) {
-                    if (s.getId_parcial_db() == row.getId_parcial_db() && s.getIdSubnota() != row.getIdSubnota()) {
-                        suma += s.getValor();
-                    }
-                }
-                if (suma > 10.0) {
-                    showError("La suma de las subnotas para el parcial " + row.getParcial_nombre() + " no puede exceder 10.0");
+                
+                if (!validarSumaSubnotas(conn, row.getIdCalificacion(), row.getId_parcial_db(), valorNuevo, row.getIdSubnota())) {
                     return;
                 }
 
                 // Actualizar subnota
                 updateSubnota(conn, row.getIdSubnota(), valorNuevo);
-                showInfo("Subnota actualizada correctamente.");
+                showInfo("Subnota actualizada correctamente");
                 loadSubnotas();
             }
         } catch (SQLException e) {
-            showError("Error de base de datos: " + e.getMessage());
+            showError("Error al actualizar la subnota: " + e.getMessage());
         } catch (Exception e) {
             showError("Error inesperado: " + e.getMessage());
         }
@@ -485,31 +648,31 @@ public class ProfesorController implements MainController {
         int idSubnota;
         int idEstudiante;
         String nombre_completo;
-        int id_parcial_db; // Renombrar para mayor claridad (almacena id_parcial de la base de datos)
-        int numero; // Este campo almacenará el número de subnota (1-10) de la base de datos (columna Numero)
+        int id_parcial_db;
+        int numero_nota;
         double valor;
         int idCalificacion;
-        String parcial_nombre; // Campo para el nombre del parcial (de la columna Nombre en Parcial)
+        String parcial_nombre;
 
-        public SubnotaRow(int idSubnota, int idEstudiante, String nombre_completo, int id_parcial_db, int numero, double valor, int idCalificacion, String parcial_nombre) {
+        public SubnotaRow(int idSubnota, int idEstudiante, String nombre_completo, int id_parcial_db, int numero_nota, double valor, int idCalificacion, String parcial_nombre) {
             this.idSubnota = idSubnota;
             this.idEstudiante = idEstudiante;
             this.nombre_completo = nombre_completo;
-            this.id_parcial_db = id_parcial_db; // Almacena id_parcial
-            this.numero = numero; // Almacena número de subnota
+            this.id_parcial_db = id_parcial_db;
+            this.numero_nota = numero_nota;
             this.valor = valor;
             this.idCalificacion = idCalificacion;
-            this.parcial_nombre = parcial_nombre; // Almacena nombre del parcial
+            this.parcial_nombre = parcial_nombre;
         }
 
         public int getIdSubnota() { return idSubnota; }
         public int getIdEstudiante() { return idEstudiante; }
         public String getNombre_completo() { return nombre_completo; }
-        public int getId_parcial_db() { return id_parcial_db; } // Nuevo getter para id_parcial de la base de datos
-        public int getNumero() { return numero; } // Devuelve número de subnota
+        public int getId_parcial_db() { return id_parcial_db; }
+        public int getNumero_nota() { return numero_nota; }
         public double getValor() { return valor; }
         public int getIdCalificacion() { return idCalificacion; }
-        public String getParcial_nombre() { return parcial_nombre; } // Getter para nombre del parcial
+        public String getParcial_nombre() { return parcial_nombre; }
     }
 
     @FXML
@@ -523,7 +686,10 @@ public class ProfesorController implements MainController {
 
     private List<SubnotaRow> findSubnotasByCalificacion(Connection conn, int idCalificacion) throws SQLException {
         List<SubnotaRow> subnotas = new ArrayList<>();
-        String sql = "SELECT s.*, p.nombre as parcial_nombre, u.nombre_usuario || ' ' || u.apellido_usuario as nombre_completo " +
+        String sql = "SELECT s.id_subnota, s.id_calificacion, s.id_parcial, s.numero_nota, s.valor, " +
+                    "p.nombre as parcial_nombre, " +
+                    "c.id_estudiante, " +
+                    "u.nombre_usuario || ' ' || u.apellido_usuario as nombre_completo " +
                     "FROM Subnota s " +
                     "JOIN Parcial p ON s.id_parcial = p.id_parcial " +
                     "JOIN Calificacion c ON s.id_calificacion = c.id_calificacion " +
@@ -539,7 +705,7 @@ public class ProfesorController implements MainController {
                     rs.getInt("id_estudiante"),
                     rs.getString("nombre_completo"),
                     rs.getInt("id_parcial"),
-                    rs.getInt("numero"),
+                    rs.getInt("numero_nota"),
                     rs.getDouble("valor"),
                     rs.getInt("id_calificacion"),
                     rs.getString("parcial_nombre")
@@ -550,7 +716,7 @@ public class ProfesorController implements MainController {
     }
 
     private void insertSubnota(Connection conn, int idCalificacion, int idParcial, int numero, double valor) throws SQLException {
-        String sql = "INSERT INTO Subnota (id_calificacion, id_parcial, numero, valor) VALUES (?, ?, ?, ?)";
+        String sql = "INSERT INTO Subnota (id_calificacion, id_parcial, numero_nota, valor) VALUES (?, ?, ?, ?)";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setInt(1, idCalificacion);
             pstmt.setInt(2, idParcial);

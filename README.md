@@ -1,6 +1,6 @@
 # Sistema de Gestión de Notas Universitarias (UTIA)
 
-![Logo UTIA](https://i.imgur.com/O4q5dJ5.png)
+![Logo UTIA](src/main/resources/images/logo.png)
 
 Un sistema de escritorio robusto y completo para la gestión académica, desarrollado en Java con JavaFX y SQLite. Permite la administración de estudiantes, profesores, materias, carreras y calificaciones, con un sistema de roles bien definido.
 

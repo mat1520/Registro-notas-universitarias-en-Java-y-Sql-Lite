@@ -1,7 +1,30 @@
+# Maven target directory
+target/
+
+# IDE files
+.idea/
+*.iml
+.vscode/
+.settings/
+.classpath
+.project
+
+# Compiled files
+*.class
+*.jar
+*.war
+*.ear
+
+# Logs
+*.log
+
+# OS specific files
+.DS_Store
+Thumbs.db
+
 # Archivos y carpetas a ignorar
 /target/
 /.vscode/
-*.log
 *.tmp
 datos.sql
 database.sql

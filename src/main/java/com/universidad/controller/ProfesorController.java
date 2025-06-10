@@ -643,7 +643,7 @@ public class ProfesorController implements MainController {
             Optional<Double> result = dialog.showAndWait();
             if (result.isPresent()) {
                 double valorNuevo = result.get();
-                
+
                 // Actualizar subnota
                 updateSubnota(conn, row.getIdSubnota(), valorNuevo);
                 showInfo("Subnota actualizada correctamente");

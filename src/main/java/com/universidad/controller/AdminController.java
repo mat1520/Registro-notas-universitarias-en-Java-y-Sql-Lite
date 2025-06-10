@@ -96,6 +96,15 @@ public class AdminController implements MainController {
     @FXML
     private Button agregarCarreraButton;
     
+    @FXML
+    private ComboBox<String> filtroRolComboBox;
+    
+    @FXML
+    private ComboBox<CarreraItem> filtroCarreraComboBox;
+    
+    @FXML
+    private TableColumn<UsuarioRow, String> carreraColumn;
+    
     private Usuario usuario;
     
     @Override
@@ -128,6 +137,25 @@ public class AdminController implements MainController {
             nombreCarreraColumn.setCellValueFactory(new PropertyValueFactory<>("nombre_carrera"));
             refreshCarrerasTable();
         }
+
+        // Inicializar filtros
+        filtroRolComboBox.getItems().addAll("Todos", "ADMIN", "PROFESOR", "ESTUDIANTE");
+        filtroRolComboBox.setValue("Todos");
+        filtroRolComboBox.setOnAction(e -> refreshTable());
+
+        // Cargar carreras para el filtro
+        cargarCarrerasParaFiltro();
+        filtroCarreraComboBox.setOnAction(e -> refreshTable());
+
+        // Configurar columna de carrera
+        carreraColumn.setCellValueFactory(cellData -> {
+            try (Connection conn = DatabaseConnection.getConnection()) {
+                String carreraNombre = obtenerCarreraUsuario(conn, cellData.getValue().getId(), cellData.getValue().getRol());
+                return new javafx.beans.property.SimpleStringProperty(carreraNombre);
+            } catch (SQLException e) {
+                return new javafx.beans.property.SimpleStringProperty("");
+            }
+        });
     }
     
     @FXML
@@ -741,28 +769,26 @@ public class AdminController implements MainController {
         public java.util.List<MateriaItem> getMateriasProfesor() { return materiasProfesor; }
     }
     
-    private void showError(String message) {
-        Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle("Error");
+    private void showAlert(String message, Alert.AlertType type) {
+        Alert alert = new Alert(type);
+        alert.setTitle(type == Alert.AlertType.ERROR ? "Error" : 
+                      type == Alert.AlertType.INFORMATION ? "Información" : 
+                      type == Alert.AlertType.CONFIRMATION ? "Confirmar" : "");
         alert.setHeaderText(null);
         alert.setContentText(message);
         alert.showAndWait();
+    }
+    
+    private void showError(String message) {
+        showAlert(message, Alert.AlertType.ERROR);
     }
     
     private void showInfo(String message) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Información");
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        alert.showAndWait();
+        showAlert(message, Alert.AlertType.INFORMATION);
     }
     
     private void showSuccess(String message) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Éxito");
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        alert.showAndWait();
+        showAlert(message, Alert.AlertType.INFORMATION);
     }
     
     public static class UsuarioRow {
@@ -868,8 +894,7 @@ public class AdminController implements MainController {
                     showError("Todos los campos son obligatorios.");
                     return null;
                 }
-                if (!nombre.matches("[A-Za-záéíóúÁÉÍÓÚñÑ0-9 ]+")) {
-                    showError("El nombre solo puede contener letras, números y espacios.");
+                if (!validarNombre(nombre, "materia")) {
                     return null;
                 }
                 // Validar duplicado
@@ -978,8 +1003,7 @@ public class AdminController implements MainController {
                     showError("Todos los campos son obligatorios.");
                     return null;
                 }
-                if (!nombre.matches("[A-Za-záéíóúÁÉÍÓÚñÑ0-9 ]+")) {
-                    showError("El nombre solo puede contener letras, números y espacios.");
+                if (!validarNombre(nombre, "materia")) {
                     return null;
                 }
                 // Validar duplicado (excluyendo la materia actual)
@@ -1033,26 +1057,60 @@ public class AdminController implements MainController {
             showError("Por favor seleccione una materia para eliminar.");
             return;
         }
+
+        // Verificar si la materia está asignada a algún profesor
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(
+                 "SELECT p.nombre_usuario || ' ' || p.apellido_usuario as nombre_profesor " +
+                 "FROM Curso c " +
+                 "JOIN Profesor pr ON c.id_profesor = pr.id_profesor " +
+                 "JOIN Usuario p ON pr.id_usuario = p.id_usuario " +
+                 "WHERE c.id_materia = ? " +
+                 "LIMIT 1")) {
+            
+            pstmt.setInt(1, selected.getId());
+            ResultSet rs = pstmt.executeQuery();
+            
+            if (rs.next()) {
+                String nombreProfesor = rs.getString("nombre_profesor");
+                showError("No se puede eliminar la materia porque está asignada al profesor: " + nombreProfesor);
+                return;
+            }
+        } catch (SQLException e) {
+            showError("Error al verificar asignaciones de la materia: " + e.getMessage());
+            return;
+        }
+
+        // Si no está asignada, mostrar confirmación
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-        alert.setTitle("Confirmar eliminación");
-        alert.setHeaderText("¿Está seguro de eliminar la materia seleccionada?");
+        alert.setTitle("Confirmar Eliminación");
+        alert.setHeaderText("¿Está seguro de eliminar la materia " + selected.getNombre_materia() + "?");
         alert.setContentText("Esta acción no se puede deshacer.");
         Optional<ButtonType> result = alert.showAndWait();
         if (result.isPresent() && result.get() == ButtonType.OK) {
-            eliminarMateria(selected.getId());
+            deleteMateria(selected);
         }
     }
 
-    private void eliminarMateria(int idMateria) {
-        String sql = "DELETE FROM Materia WHERE id_materia = ?";
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setInt(1, idMateria);
-            pstmt.executeUpdate();
-            showSuccess("Materia eliminada correctamente.");
-            refreshMateriasTable();
+    private void deleteMateria(MateriaRow materia) {
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            conn.setAutoCommit(false);
+            try {
+                // Eliminar la materia
+                try (PreparedStatement pstmt = conn.prepareStatement("DELETE FROM Materia WHERE id_materia = ?")) {
+                    pstmt.setInt(1, materia.getId());
+                    pstmt.executeUpdate();
+                }
+                
+                conn.commit();
+                materiasTable.getItems().remove(materia);
+                showSuccess("Materia eliminada correctamente.");
+            } catch (SQLException e) {
+                conn.rollback();
+                throw e;
+            }
         } catch (SQLException e) {
-            showError("Error al eliminar materia: " + e.getMessage());
+            showError("Error al eliminar la materia: " + e.getMessage());
         }
     }
 
@@ -1114,8 +1172,7 @@ public class AdminController implements MainController {
                     showError("Todos los campos son obligatorios.");
                     return null;
                 }
-                if (!nombre.matches("[A-Za-záéíóúÁÉÍÓÚñÑ0-9 ]+")) {
-                    showError("El nombre solo puede contener letras, números y espacios.");
+                if (!validarNombre(nombre, "carrera")) {
                     return null;
                 }
                 // Validar duplicado
@@ -1223,8 +1280,7 @@ public class AdminController implements MainController {
                     return null;
                 }
                 
-                if (!nombre.matches("[A-Za-záéíóúÁÉÍÓÚñÑ0-9 ]+")) {
-                    showError("El nombre solo puede contener letras, números y espacios.");
+                if (!validarNombre(nombre, "carrera")) {
                     return null;
                 }
                 // Validar duplicado (excluyendo la carrera actual)
@@ -1281,45 +1337,38 @@ public class AdminController implements MainController {
             showError("Por favor seleccione una carrera para eliminar.");
             return;
         }
-        int countEstudiantes = 0;
-        int countMaterias = 0;
+
+        // Verificar si hay materias o estudiantes en la carrera
         try (Connection conn = DatabaseConnection.getConnection()) {
-            // Contar estudiantes asociados
-            try (PreparedStatement pstmt = conn.prepareStatement("SELECT COUNT(*) FROM Estudiante WHERE id_carrera = ?")) {
+            // Verificar materias
+            try (PreparedStatement pstmt = conn.prepareStatement(
+                "SELECT COUNT(*) FROM Materia WHERE id_carrera = ?")) {
                 pstmt.setInt(1, selected.getId());
                 ResultSet rs = pstmt.executeQuery();
-                if (rs.next()) {
-                    countEstudiantes = rs.getInt(1);
+                if (rs.next() && rs.getInt(1) > 0) {
+                    showError("No se puede eliminar la carrera porque tiene materias asignadas. Elimine primero las materias.");
+                    return;
                 }
             }
-            // Contar materias asociadas
-            try (PreparedStatement pstmt = conn.prepareStatement("SELECT COUNT(*) FROM Materia WHERE id_carrera = ?")) {
+
+            // Verificar estudiantes
+            try (PreparedStatement pstmt = conn.prepareStatement(
+                "SELECT COUNT(*) FROM Estudiante WHERE id_carrera = ?")) {
                 pstmt.setInt(1, selected.getId());
                 ResultSet rs = pstmt.executeQuery();
-                if (rs.next()) {
-                    countMaterias = rs.getInt(1);
+                if (rs.next() && rs.getInt(1) > 0) {
+                    showError("No se puede eliminar la carrera porque tiene estudiantes inscritos.");
+                    return;
                 }
             }
         } catch (SQLException e) {
-            showError("Error al validar asociaciones: " + e.getMessage());
-            return;
-        } catch (Exception e) {
-            showError("Error inesperado al validar asociaciones: " + e.getMessage());
+            showError("Error al verificar dependencias de la carrera: " + e.getMessage());
             return;
         }
-        if (countEstudiantes > 0 || countMaterias > 0) {
-            String msg = "No se puede eliminar la carrera porque tiene: ";
-            if (countEstudiantes > 0) msg += countEstudiantes + " estudiante(s) asociado(s)";
-            if (countEstudiantes > 0 && countMaterias > 0) msg += " y ";
-            if (countMaterias > 0) msg += countMaterias + " materia(s) asociada(s)";
-            msg += ".";
-            showError(msg);
-            return;
-        }
-        // Eliminar la carrera si no hay asociaciones
+
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
         alert.setTitle("Confirmar eliminación");
-        alert.setHeaderText("¿Está seguro de eliminar la carrera seleccionada?");
+        alert.setHeaderText("¿Está seguro de eliminar la carrera " + selected.getNombre_carrera() + "?");
         alert.setContentText("Esta acción no se puede deshacer.");
         Optional<ButtonType> result = alert.showAndWait();
         if (result.isPresent() && result.get() == ButtonType.OK) {
@@ -1328,12 +1377,20 @@ public class AdminController implements MainController {
     }
 
     private void eliminarCarrera(int idCarrera) {
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement("DELETE FROM Carrera WHERE id_carrera = ?")) {
-            pstmt.setInt(1, idCarrera);
-            pstmt.executeUpdate();
-            refreshCarrerasTable();
-            showSuccess("Carrera eliminada exitosamente.");
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            conn.setAutoCommit(false);
+            try {
+                try (PreparedStatement pstmt = conn.prepareStatement("DELETE FROM Carrera WHERE id_carrera = ?")) {
+                    pstmt.setInt(1, idCarrera);
+                    pstmt.executeUpdate();
+                }
+                conn.commit();
+                refreshCarrerasTable();
+                showSuccess("Carrera eliminada exitosamente.");
+            } catch (SQLException e) {
+                conn.rollback();
+                throw e;
+            }
         } catch (SQLException e) {
             showError("Error al eliminar carrera: " + e.getMessage());
         }
@@ -1381,21 +1438,109 @@ public class AdminController implements MainController {
         public String toString() { return nombre; }
     }
 
-    private void refreshTable() {
+    private void cargarCarrerasParaFiltro() {
         try (Connection conn = DatabaseConnection.getConnection();
-             Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery(
-                "SELECT u.id_usuario, u.cedula, u.nombre_usuario, u.apellido_usuario, u.rol FROM Usuario u")) {
-            
-            usuariosTable.getItems().clear();
+             PreparedStatement pstmt = conn.prepareStatement("SELECT id_carrera, nombre_carrera FROM Carrera ORDER BY nombre_carrera")) {
+            ResultSet rs = pstmt.executeQuery();
+            filtroCarreraComboBox.getItems().clear();
+            filtroCarreraComboBox.getItems().add(new CarreraItem(0, "Todas"));
             while (rs.next()) {
-                usuariosTable.getItems().add(new UsuarioRow(
-                    rs.getInt("id_usuario"),
-                    rs.getString("cedula"),
-                    rs.getString("nombre_usuario"),
-                    rs.getString("apellido_usuario"),
-                    rs.getString("rol")
-                ));
+                filtroCarreraComboBox.getItems().add(new CarreraItem(rs.getInt("id_carrera"), rs.getString("nombre_carrera")));
+            }
+            filtroCarreraComboBox.setValue(filtroCarreraComboBox.getItems().get(0));
+        } catch (SQLException e) {
+            showError("Error al cargar carreras: " + e.getMessage());
+        }
+    }
+
+    private String obtenerCarreraUsuario(Connection conn, int idUsuario, String rol) throws SQLException {
+        if ("ESTUDIANTE".equals(rol)) {
+            String sql = "SELECT c.nombre_carrera FROM Carrera c " +
+                        "JOIN Estudiante e ON c.id_carrera = e.id_carrera " +
+                        "WHERE e.id_usuario = ?";
+            try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                pstmt.setInt(1, idUsuario);
+                ResultSet rs = pstmt.executeQuery();
+                if (rs.next()) {
+                    return rs.getString("nombre_carrera");
+                }
+            }
+        } else if ("PROFESOR".equals(rol)) {
+            String sql = "SELECT DISTINCT c.nombre_carrera FROM Carrera c " +
+                        "JOIN Materia m ON c.id_carrera = m.id_carrera " +
+                        "JOIN Curso cu ON m.id_materia = cu.id_materia " +
+                        "JOIN Profesor p ON cu.id_profesor = p.id_profesor " +
+                        "WHERE p.id_usuario = ?";
+            try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                pstmt.setInt(1, idUsuario);
+                ResultSet rs = pstmt.executeQuery();
+                StringBuilder carreras = new StringBuilder();
+                while (rs.next()) {
+                    if (carreras.length() > 0) carreras.append(", ");
+                    carreras.append(rs.getString("nombre_carrera"));
+                }
+                return carreras.toString();
+            }
+        }
+        return "";
+    }
+
+    @FXML
+    private void handleLimpiarFiltros() {
+        filtroRolComboBox.setValue("Todos");
+        filtroCarreraComboBox.setValue(filtroCarreraComboBox.getItems().get(0));
+        refreshTable();
+    }
+
+    private void refreshTable() {
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            StringBuilder sql = new StringBuilder(
+                "SELECT DISTINCT u.id_usuario, u.cedula, u.nombre_usuario, u.apellido_usuario, u.rol " +
+                "FROM Usuario u "
+            );
+
+            List<Object> params = new ArrayList<>();
+            boolean whereAdded = false;
+
+            // Filtro por rol
+            String rolSeleccionado = filtroRolComboBox.getValue();
+            if (!"Todos".equals(rolSeleccionado)) {
+                sql.append(" WHERE u.rol = ?");
+                params.add(rolSeleccionado);
+                whereAdded = true;
+            }
+
+            // Filtro por carrera
+            CarreraItem carreraSeleccionada = filtroCarreraComboBox.getValue();
+            if (carreraSeleccionada != null && carreraSeleccionada.getId() != 0) {
+                sql.append(whereAdded ? " AND" : " WHERE");
+                sql.append(" (EXISTS (SELECT 1 FROM Estudiante e WHERE e.id_usuario = u.id_usuario AND e.id_carrera = ?) OR " +
+                          "EXISTS (SELECT 1 FROM Profesor p " +
+                          "JOIN Curso cu ON p.id_profesor = cu.id_profesor " +
+                          "JOIN Materia m ON cu.id_materia = m.id_materia " +
+                          "WHERE p.id_usuario = u.id_usuario AND m.id_carrera = ?))");
+                params.add(carreraSeleccionada.getId());
+                params.add(carreraSeleccionada.getId());
+            }
+
+            sql.append(" ORDER BY u.rol, u.nombre_usuario");
+
+            try (PreparedStatement pstmt = conn.prepareStatement(sql.toString())) {
+                for (int i = 0; i < params.size(); i++) {
+                    pstmt.setObject(i + 1, params.get(i));
+                }
+
+                ResultSet rs = pstmt.executeQuery();
+                usuariosTable.getItems().clear();
+                while (rs.next()) {
+                    usuariosTable.getItems().add(new UsuarioRow(
+                        rs.getInt("id_usuario"),
+                        rs.getString("cedula"),
+                        rs.getString("nombre_usuario"),
+                        rs.getString("apellido_usuario"),
+                        rs.getString("rol")
+                    ));
+                }
             }
         } catch (SQLException e) {
             showError("Error al cargar usuarios: " + e.getMessage());
@@ -1410,5 +1555,17 @@ public class AdminController implements MainController {
             return;
         }
         showDeleteConfirmation(selected);
+    }
+
+    private boolean validarNombre(String nombre, String tipo) {
+        if (nombre.isEmpty()) {
+            showError("El nombre es obligatorio.");
+            return false;
+        }
+        if (!nombre.matches("[A-Za-záéíóúÁÉÍÓÚñÑ0-9 ]+")) {
+            showError("El nombre solo puede contener letras, números y espacios.");
+            return false;
+        }
+        return true;
     }
 } 

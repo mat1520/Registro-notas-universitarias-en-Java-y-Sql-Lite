@@ -143,7 +143,7 @@ public class AdminController implements MainController {
         filtroRolComboBox.setValue("Todos");
         filtroRolComboBox.setOnAction(e -> refreshTable());
 
-        // Cargar carreras para el filtro
+        // Cargar carreras para el filtrar Actualizado Ariel
         cargarCarrerasParaFiltro();
         filtroCarreraComboBox.setOnAction(e -> refreshTable());
 

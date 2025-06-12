@@ -19,7 +19,7 @@ public class Usuario {
         this.rol = rol;
     }
 
-    // Getters y Setters
+    
     public Integer getIdUsuario() {
         return idUsuario;
     }

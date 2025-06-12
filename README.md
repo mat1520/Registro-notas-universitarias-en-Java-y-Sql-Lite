@@ -39,8 +39,8 @@ Un sistema de escritorio robusto y completo para la gestión académica, desarro
 
 1.  **Clonar el Repositorio:**
     ```bash
-    git clone [https://github.com/tu_usuario/tu_repositorio.git](https://github.com/tu_usuario/tu_repositorio.git)
-    cd tu_repositorio
+    git clone [https://github.com/mat1520/Registro-notas-universitarias-en-Java-y-Sql-Lite](https://github.com/mat1520/Registro-notas-universitarias-en-Java-y-Sql-Lite)
+    cd Registro-notas-universitarias-en-Java-y-Sql-Lite
     ```
 
 2.  **Base de Datos:**
